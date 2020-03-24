@@ -47,7 +47,7 @@ scene.add(camera)
  */
 
  // Point light
-const pointLight = new THREE.PointLight(0xff7777, 2, 30)
+const pointLight = new THREE.PointLight(0xff9999, 2, 30)
 pointLight.position.set(0, 1, 9)
 scene.add(pointLight)
 // Helper
@@ -66,14 +66,16 @@ let models =
 {
     redCellGeometry: null,
     plateletGeometry: null,
+    whiteCellGeometry: null,
     
-    numberOfModels: 2,
+    numberOfModels: 3,
     numberOfLoadedModels: 0,
 
     gltfLoader: new GLTFLoader(),
 
     load()
     {
+        // Load red cell
         this.gltfLoader.load(
             'models/redCell.glb',
             (glb) =>
@@ -81,12 +83,13 @@ let models =
                 console.log('success to load redCellGeometry')
         
                 this.redCellGeometry = glb.scene.children[0].children[0].geometry
-                this.redCellGeometry.scale(0.2, 0.2, 0.2)
+                this.redCellGeometry.scale(0.25, 0.25, 0.25)
         
                 this.launchIfLoadingComplete()
             },
         )
         
+        // Load platelet
         this.gltfLoader.load(
             'models/platelet/blood_platelet.gltf',
             (gltf) =>
@@ -95,6 +98,20 @@ let models =
         
                 this.plateletGeometry = gltf.scene.children[0].children[0].children[0].children[0].children[0].children[0].geometry
                 this.plateletGeometry.scale(0.001, 0.001, 0.001)
+        
+                this.launchIfLoadingComplete()
+            },
+        )
+
+        // Load white cell
+        this.gltfLoader.load(
+            'models/whiteCell.glb',
+            (glb) =>
+            {
+                console.log('success to load white cell')
+        
+                this.whiteCellGeometry = glb.scene.children[0].children[0].geometry
+                this.whiteCellGeometry.scale(0.0013, 0.0013, 0.0013)
         
                 this.launchIfLoadingComplete()
             },
@@ -116,7 +133,12 @@ models.load()
  * Materials
  */
 
-// Default red material
+// Debug normal material
+const normalMaterial = new THREE.MeshNormalMaterial({
+    side: THREE.DoubleSide,
+})
+
+// Red cell material
 let redCellMaterial = new THREE.MeshPhongMaterial({
     color : new THREE.Color(0x6D1A0B),
     shininess : 0,
@@ -128,17 +150,15 @@ let plateletMaterial = new THREE.MeshPhongMaterial({
     shininess : 0,
 })
 
+// White cell material
+let whiteCellMaterial = new THREE.MeshPhongMaterial({
+    color : new THREE.Color(0x5093e2),
+    shininess : 0,
+})
+
 /**
  * Object
  */
-
-const normalMaterial = new THREE.MeshNormalMaterial({
-    side: THREE.DoubleSide,
-})
-
-// Torus Knot
-// const torusKnot = new THREE.Mesh(new THREE.TorusKnotGeometry(1.5, 0.5, 128, 16), normalMaterial)
-// scene.add(torusKnot)
 
 // Tube
 let tube = {
@@ -293,12 +313,17 @@ let bloodParticlesSystem =
             {
                 geometry: models.redCellGeometry,
                 material: redCellMaterial,
-                number: 50,
+                number: 55,
             },
             {
                 geometry: models.plateletGeometry,
                 material: plateletMaterial,
                 number: 10,
+            },
+            {
+                geometry: models.whiteCellGeometry,
+                material: whiteCellMaterial,
+                number: 20,
             },
         ]
     },
@@ -324,7 +349,7 @@ let bloodParticlesSystem =
                 // Generate a random initial position in the tube
                 let randomAngle = Math.random() * Math.PI * 2
                 let x = Math.cos(randomAngle) * (Math.random() * (tube.radius - this.middleSpace) + this.middleSpace)
-                let y = Math.sin(randomAngle) * (Math.random() * (tube.radius - 0.3 - this.middleSpace) + this.middleSpace)
+                let y = Math.sin(randomAngle) * (Math.random() * (tube.radius - 0.5 - this.middleSpace) + this.middleSpace)
                 mesh.position.x = x
                 mesh.position.y = y
     
@@ -340,7 +365,7 @@ let bloodParticlesSystem =
         let timeline = new TimelineLite()
         timeline.pause()
         timeline.to(bloodParticlesSystem, 3, {speedFactor: 20, ease: Linear.easeNone})
-                .to(pointLight, 2, {intensity: 0.3}, '-=2.5')
+                .to(pointLight.position, 2, {z: 20}, '-=2.5')
 
         // Launching timeline when the space bar is pressed
         window.addEventListener('keydown', _event =>
@@ -354,7 +379,7 @@ let bloodParticlesSystem =
         {
             if(_event.code == 'Space')
             {
-                timeline.reverse(1.5)
+                timeline.reverse(2)
             }
         })
     }
