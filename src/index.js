@@ -61,23 +61,17 @@ scene.add(ambientLight)
 
 const gltfLoader = new GLTFLoader()
 
-let redCells = new THREE.Group()
-let redCellsArray = []
+let bloodCellGeometry
 gltfLoader.load(
-    'models/redCells/scene.gltf',
-    (gltf) =>
+    'models/redCell.glb',
+    (glb) =>
     {
-        // console.log('success')
+        console.log('success')
 
-        const redCellsWithoutGround = gltf.scene.children[0].children[0].children[0].children[0].children[0]
-        const child = gltf.scene.children[0].children[0].children[0].children[0].children[0]
-        redCellsArray.push(gltf.scene.children[0])
+        bloodCellGeometry = glb.scene.children[0].children[0].geometry
+        // console.log(bloodCellGeometry)
 
-        redCells.add(child)
-        redCells.scale.set(0.01, 0.01, 0.01)
-        redCells.position.z += 15
-
-        scene.add(redCells)
+        bloodParticlesSystem.setup()
     },
     (progress) =>
     {
@@ -123,7 +117,6 @@ let tube = {
         {
             i == this.length - 1 ? points.push(new THREE.Vector3(0, -3, -i )) : points.push(new THREE.Vector3(0, 0, -i ))
         }
-        
         // Create a curve based on the points
         this.curve = new THREE.CatmullRomCurve3(points)
         
@@ -188,11 +181,12 @@ window.addEventListener('resize', () =>
 
 class BloodParticle
 {
-    constructor(size, speed, mesh)
+    constructor(size, speed, rotationSpeed, mesh)
     {
         this.initialPos = - tube.length
         this.size = size
         this.speed = speed
+        this.rotationSpeed = rotationSpeed
         this.mesh = mesh
 
         // Setting initial properties of the particle on the mesh
@@ -207,6 +201,9 @@ class BloodParticle
         {
             this.mesh.position.z = this.initialPos
         }
+
+        this.mesh.rotation.x += this.rotationSpeed
+        this.mesh.rotation.z += this.rotationSpeed
     }
 }
 
@@ -214,15 +211,18 @@ let bloodParticlesSystem =
 {
     // System properties
     group: new THREE.Group,
+    listOfType: [],
     numberOfParticles: 50,
     list: [],
     middleSpace: 0.3,
 
     // Particles properties
+    minSize: 0.1,
+    maxSize: 0.3,
     minSpeed: 0.01,
     maxSpeed: 0.35,
-    minSize: 0.3,
-    maxSize: 2.5,
+    minRotationSpeed: 0.005,
+    maxRotationSpeed: 0.07,
 
     setup()
     {
@@ -241,12 +241,13 @@ let bloodParticlesSystem =
         })
         for (let i = 0; i < this.numberOfParticles; i++)
         {
-            // Generate random size and speed
+            // Generate random size, speed and rotationSpeed
             let randomSize = Math.random() * (this.maxSize - this.minSize) + this.minSize
             let randomSpeed = Math.random() * (this.maxSpeed - this.minSpeed) + this.minSpeed
+            let randomRotationSpeed = Math.random() * (this.maxRotationSpeed - this.minRotationSpeed) + this.minRotationSpeed
 
             // Push the particle in the list
-            this.list.push(new BloodParticle(randomSize, randomSpeed, new THREE.Mesh(particleGeometry, particleMaterial)))
+            this.list.push(new BloodParticle(randomSize, randomSpeed, randomRotationSpeed, new THREE.Mesh(bloodCellGeometry, particleMaterial)))
 
             // Generate a random initial position in the tube
             let randomAngle = Math.random() * Math.PI * 2
@@ -260,7 +261,6 @@ let bloodParticlesSystem =
         }
     }
 }
-bloodParticlesSystem.setup()
 
 /**
  * Loop
