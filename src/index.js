@@ -1,5 +1,6 @@
 import './style/main.styl'
 import * as THREE from 'three'
+import { TweenLite, TimelineLite, Linear} from 'gsap'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
@@ -8,7 +9,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
  * Cursor
  */
 
-const cursor = { x: 0, y: 0}
+const cursor = { x: 0, y: 0 }
 window.addEventListener('mousemove', (_event) =>
 {
     cursor.x = _event.clientX / sizes.width - 0.5
@@ -247,6 +248,8 @@ let bloodParticlesSystem =
 
         // Adding the particle to the scene
         scene.add(this.group)
+
+        this.setTransitionEvent()
     },
 
     setupListOfType()
@@ -295,6 +298,31 @@ let bloodParticlesSystem =
                 this.group.add(mesh)
             }
         }
+    },
+
+    setTransitionEvent()
+    {
+        // Define timeline
+        let timeline = new TimelineLite()
+        timeline.pause()
+        timeline.to(bloodParticlesSystem, 3, {speedFactor: 20, ease: Linear.easeNone})
+                .to(pointLight, 2, {intensity: 0.3}, '-=2.5')
+
+        // Launching timeline when the space bar is pressed
+        window.addEventListener('keydown', _event =>
+        {
+            if(_event.code == 'Space')
+            {
+                timeline.play()
+            }
+        })
+        window.addEventListener('keyup', _event =>
+        {
+            if(_event.code == 'Space')
+            {
+                timeline.reverse(1.5)
+            }
+        })
     }
 }
 
