@@ -45,6 +45,7 @@ scene.add(camera)
  * Lights
  */
 
+ // Point light
 const pointLight = new THREE.PointLight(0xffffff, 2, 30)
 pointLight.position.set(0, 1, 9)
 scene.add(pointLight)
@@ -52,6 +53,7 @@ scene.add(pointLight)
 const pointLightHelper = new THREE.PointLightHelper(pointLight, 0.2)
 scene.add( pointLightHelper )
 
+// Ambient light
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
 scene.add(ambientLight)
 
@@ -98,7 +100,7 @@ const normalMaterial = new THREE.MeshNormalMaterial({
 // const torusKnot = new THREE.Mesh(new THREE.TorusKnotGeometry(1.5, 0.5, 128, 16), normalMaterial)
 // scene.add(torusKnot)
 
-// TUBE
+// Tube
 let tube = {
 
     length: 70,
@@ -185,36 +187,50 @@ class BloodParticle
     {
         this.initialPos = - tube.length
         this.size = size
-        this.speed = speed
+        this.referenceSpeed = speed
+        this.speed = this.referenceSpeed
         this.rotationSpeed = rotationSpeed
         this.mesh = mesh
 
-        // Setting initial properties of the particle on the mesh
+        // Setting initial properties of the particle's mesh
         this.mesh.position.z = this.initialPos
         this.mesh.scale.set(this.size, this.size, this.size)
     }
 
-    udpatePos()
+    udpateState()
     {
+        // Make the particle moving and reset position if the particle reach the end of the tube
         this.mesh.position.z += this.speed
         if (this.mesh.position.z > 10)
         {
             this.mesh.position.z = this.initialPos
         }
 
+        // Make the particle rotate
         this.mesh.rotation.x += this.rotationSpeed
         this.mesh.rotation.z += this.rotationSpeed
+
+        //
+        this.speed = this.referenceSpeed * bloodParticlesSystem.speedFactor
+
     }
 }
 
+// Default red material
+let redCellMaterial = new THREE.MeshPhongMaterial({
+    color : new THREE.Color(0x6D1A0B),
+    shininess : 0,
+})
+
 let bloodParticlesSystem =
 {
-    // System properties
     group: new THREE.Group,
-    listOfType: [],
-    numberOfParticles: 50,
     list: [],
+    listOfType: [],
+    
+    // System properties
     middleSpace: 0.3,
+    speedFactor: 1,
 
     // Particles properties
     minSize: 0.1,
@@ -226,38 +242,58 @@ let bloodParticlesSystem =
 
     setup()
     {
+        this.setupListOfType()
         this.setupNaturalFlow()
 
         // Adding the particle to the scene
         scene.add(this.group)
     },
 
+    setupListOfType()
+    {
+        this.listOfType =
+        [
+            {
+                geometry: bloodCellGeometry,
+                material: redCellMaterial,
+                number: 50,
+            },
+            {
+                geometry: bloodCellGeometry,
+                material: normalMaterial,
+                number: 10,
+            },
+        ]
+    },
+
     setupNaturalFlow()
     {
-        const particleGeometry = new THREE.SphereGeometry(0.1, 8, 8)
-        const particleMaterial = new THREE.MeshPhongMaterial({
-            color : new THREE.Color(0x6D1A0B),
-            shininess : 0,
-        })
-        for (let i = 0; i < this.numberOfParticles; i++)
+        // Creating particles for all types
+        for (const _type of this.listOfType)
         {
-            // Generate random size, speed and rotationSpeed
-            let randomSize = Math.random() * (this.maxSize - this.minSize) + this.minSize
-            let randomSpeed = Math.random() * (this.maxSpeed - this.minSpeed) + this.minSpeed
-            let randomRotationSpeed = Math.random() * (this.maxRotationSpeed - this.minRotationSpeed) + this.minRotationSpeed
+            for (let i = 0; i < _type.number; i++)
+            {
+                // Generate random size, speed and rotationSpeed
+                let randomSize = Math.random() * (this.maxSize - this.minSize) + this.minSize
+                let randomSpeed = Math.random() * (this.maxSpeed - this.minSpeed) + this.minSpeed
+                let randomRotationSpeed = Math.random() * (this.maxRotationSpeed - this.minRotationSpeed) + this.minRotationSpeed
 
-            // Push the particle in the list
-            this.list.push(new BloodParticle(randomSize, randomSpeed, randomRotationSpeed, new THREE.Mesh(bloodCellGeometry, particleMaterial)))
-
-            // Generate a random initial position in the tube
-            let randomAngle = Math.random() * Math.PI * 2
-            let x = Math.cos(randomAngle) * (Math.random() * (tube.radius - this.middleSpace) + this.middleSpace)
-            let y = Math.sin(randomAngle) * (Math.random() * (tube.radius - this.middleSpace) + this.middleSpace)
-            this.list[i].mesh.position.x = x
-            this.list[i].mesh.position.y = y
-
-            // Adding the particle to the group
-            this.group.add(this.list[i].mesh)
+                // Creating mesh
+                let mesh = new THREE.Mesh(_type.geometry, _type.material)
+    
+                // Push the particle in the list
+                this.list.push(new BloodParticle(randomSize, randomSpeed, randomRotationSpeed, mesh))
+    
+                // Generate a random initial position in the tube
+                let randomAngle = Math.random() * Math.PI * 2
+                let x = Math.cos(randomAngle) * (Math.random() * (tube.radius - this.middleSpace) + this.middleSpace)
+                let y = Math.sin(randomAngle) * (Math.random() * (tube.radius - this.middleSpace) + this.middleSpace)
+                mesh.position.x = x
+                mesh.position.y = y
+    
+                // Adding the particle to the group
+                this.group.add(mesh)
+            }
         }
     }
 }
@@ -276,7 +312,7 @@ const loop = () =>
     // Update particles pos
     for (const _particle of bloodParticlesSystem.list)
     {
-        _particle.udpatePos()
+        _particle.udpateState()
     }
 
     // Render
