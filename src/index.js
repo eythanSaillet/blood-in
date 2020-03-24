@@ -47,7 +47,7 @@ scene.add(camera)
  */
 
  // Point light
-const pointLight = new THREE.PointLight(0xffffff, 2, 30)
+const pointLight = new THREE.PointLight(0xff7777, 2, 30)
 pointLight.position.set(0, 1, 9)
 scene.add(pointLight)
 // Helper
@@ -62,32 +62,71 @@ scene.add(ambientLight)
  * 3D Models
  */
 
-const gltfLoader = new GLTFLoader()
+let models =
+{
+    redCellGeometry: null,
+    plateletGeometry: null,
+    
+    numberOfModels: 2,
+    numberOfLoadedModels: 0,
 
-let bloodCellGeometry
-gltfLoader.load(
-    'models/redCell.glb',
-    (glb) =>
+    gltfLoader: new GLTFLoader(),
+
+    load()
     {
-        console.log('success')
-
-        bloodCellGeometry = glb.scene.children[0].children[0].geometry
-        // console.log(bloodCellGeometry)
-
-        bloodParticlesSystem.setup()
+        this.gltfLoader.load(
+            'models/redCell.glb',
+            (glb) =>
+            {
+                console.log('success to load redCellGeometry')
+        
+                this.redCellGeometry = glb.scene.children[0].children[0].geometry
+                this.redCellGeometry.scale(0.2, 0.2, 0.2)
+        
+                this.launchIfLoadingComplete()
+            },
+        )
+        
+        this.gltfLoader.load(
+            'models/platelet/blood_platelet.gltf',
+            (gltf) =>
+            {
+                console.log('success to load plateletGeometry')
+        
+                this.plateletGeometry = gltf.scene.children[0].children[0].children[0].children[0].children[0].children[0].geometry
+                this.plateletGeometry.scale(0.001, 0.001, 0.001)
+        
+                this.launchIfLoadingComplete()
+            },
+        )
     },
-    (progress) =>
-    {
-        // console.log('progress')
-        // console.log(progress)
-    },
-    (error) =>
-    {
-        console.log('error')
-        console.log(error)
-    }
-)
 
+    launchIfLoadingComplete()
+    {
+        this.numberOfLoadedModels++
+        if (this.numberOfLoadedModels == this.numberOfModels)
+        {
+            bloodParticlesSystem.setup()
+        }
+    },
+}
+models.load()
+
+/**
+ * Materials
+ */
+
+// Default red material
+let redCellMaterial = new THREE.MeshPhongMaterial({
+    color : new THREE.Color(0x6D1A0B),
+    shininess : 0,
+})
+
+// Platelet material
+let plateletMaterial = new THREE.MeshPhongMaterial({
+    color : new THREE.Color(0xccaa00),
+    shininess : 0,
+})
 
 /**
  * Object
@@ -123,11 +162,6 @@ let tube = {
         // Create a curve based on the points
         this.curve = new THREE.CatmullRomCurve3(points)
         
-        // VISUALIZE THE CURVE
-        const curvePoints = this.curve.getPoints(50)
-        const curveObject = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curvePoints), new THREE.LineBasicMaterial({color : 0xff0000}))
-        scene.add(curveObject)
-
         // Create the tube
         const tubeGeometry = new THREE.TubeGeometry(this.curve, 50, this.radius, 20)
         const tubeMaterial = new THREE.MeshPhongMaterial({
@@ -137,6 +171,12 @@ let tube = {
         this.mesh = new THREE.Mesh(tubeGeometry, tubeMaterial)
         scene.add(this.mesh)
         this.mesh.position.z += 10
+
+
+        // VISUALIZE THE CURVE
+        const curvePoints = this.curve.getPoints(50)
+        const curveObject = new THREE.Line(new THREE.BufferGeometry().setFromPoints(curvePoints), new THREE.LineBasicMaterial({color : 0xff0000}))
+        scene.add(curveObject)
     },
 }
 tube.build()
@@ -211,17 +251,11 @@ class BloodParticle
         this.mesh.rotation.x += this.rotationSpeed
         this.mesh.rotation.z += this.rotationSpeed
 
-        //
+        // Muliply by speed factor of the system to influence speed of all particles
         this.speed = this.referenceSpeed * bloodParticlesSystem.speedFactor
 
     }
 }
-
-// Default red material
-let redCellMaterial = new THREE.MeshPhongMaterial({
-    color : new THREE.Color(0x6D1A0B),
-    shininess : 0,
-})
 
 let bloodParticlesSystem =
 {
@@ -234,8 +268,8 @@ let bloodParticlesSystem =
     speedFactor: 1,
 
     // Particles properties
-    minSize: 0.1,
-    maxSize: 0.3,
+    minSize: 0.5,
+    maxSize: 1.5,
     minSpeed: 0.01,
     maxSpeed: 0.35,
     minRotationSpeed: 0.005,
@@ -257,13 +291,13 @@ let bloodParticlesSystem =
         this.listOfType =
         [
             {
-                geometry: bloodCellGeometry,
+                geometry: models.redCellGeometry,
                 material: redCellMaterial,
                 number: 50,
             },
             {
-                geometry: bloodCellGeometry,
-                material: normalMaterial,
+                geometry: models.plateletGeometry,
+                material: plateletMaterial,
                 number: 10,
             },
         ]
@@ -290,7 +324,7 @@ let bloodParticlesSystem =
                 // Generate a random initial position in the tube
                 let randomAngle = Math.random() * Math.PI * 2
                 let x = Math.cos(randomAngle) * (Math.random() * (tube.radius - this.middleSpace) + this.middleSpace)
-                let y = Math.sin(randomAngle) * (Math.random() * (tube.radius - this.middleSpace) + this.middleSpace)
+                let y = Math.sin(randomAngle) * (Math.random() * (tube.radius - 0.3 - this.middleSpace) + this.middleSpace)
                 mesh.position.x = x
                 mesh.position.y = y
     
