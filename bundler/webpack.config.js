@@ -27,7 +27,7 @@ module.exports = {
             template: path.resolve(__dirname, '../src/index.html')
         }),
         new MiniCssExtractPlugin(),
-        new CopyWebpackPlugin([{from: 'src/static'}])
+        new CopyWebpackPlugin([{from: 'static'}])
     ],
     module:
     {
