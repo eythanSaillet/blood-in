@@ -1,8 +1,9 @@
 import './style/main.styl'
 import * as THREE from 'three'
-import { TweenLite, TimelineLite, Linear} from 'gsap'
+import { TweenMax, TimelineLite, Linear, Power0, Power1} from 'gsap'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { TweenLite } from 'gsap/gsap-core';
 
 
 /**
@@ -64,13 +65,16 @@ scene.add(ambientLight)
 
 let models =
 {
+    // Defin models that we are going to laod
     redCellGeometry: null,
     plateletGeometry: null,
     whiteCellGeometry: null,
     
+    // Defin total number of medels for the loading progress
     numberOfModels: 3,
     numberOfLoadedModels: 0,
 
+    // Define the loader
     gltfLoader: new GLTFLoader(),
 
     load()
@@ -82,6 +86,7 @@ let models =
             {
                 console.log('success to load redCellGeometry')
         
+                // Get the model and resize it
                 this.redCellGeometry = glb.scene.children[0].children[0].geometry
                 this.redCellGeometry.scale(0.25, 0.25, 0.25)
         
@@ -96,8 +101,9 @@ let models =
             {
                 console.log('success to load plateletGeometry')
         
+                // Get the model and resize it
                 this.plateletGeometry = gltf.scene.children[0].children[0].children[0].children[0].children[0].children[0].geometry
-                this.plateletGeometry.scale(0.001, 0.001, 0.001)
+                this.plateletGeometry.scale(0.0007, 0.0007, 0.0007)
         
                 this.launchIfLoadingComplete()
             },
@@ -110,14 +116,16 @@ let models =
             {
                 console.log('success to load white cell')
         
+                // Get the model and resize it
                 this.whiteCellGeometry = glb.scene.children[0].children[0].geometry
-                this.whiteCellGeometry.scale(0.0013, 0.0013, 0.0013)
+                this.whiteCellGeometry.scale(0.002, 0.002, 0.002)
         
                 this.launchIfLoadingComplete()
             },
         )
     },
 
+    // Loading function that launch the project when every models are loaded
     launchIfLoadingComplete()
     {
         this.numberOfLoadedModels++
@@ -163,9 +171,11 @@ let whiteCellMaterial = new THREE.MeshPhongMaterial({
 // Tube
 let tube = {
 
+    // Tube properties
     length: 70,
     radius: 2,
 
+    // Tube objects
     curve: null,
     mesh: null,
 
@@ -246,11 +256,13 @@ class BloodParticle
 {
     constructor(size, speed, rotationSpeed, mesh)
     {
+        // Setting initial properties of the particle
         this.initialPos = - tube.length
         this.size = size
         this.referenceSpeed = speed
         this.speed = this.referenceSpeed
-        this.rotationSpeed = rotationSpeed
+        this.referenceRotationSpeed = rotationSpeed
+        this.rotationSpeed = this.referenceSpeed
         this.mesh = mesh
 
         // Setting initial properties of the particle's mesh
@@ -265,14 +277,22 @@ class BloodParticle
         if (this.mesh.position.z > 10)
         {
             this.mesh.position.z = this.initialPos
+
+            // Generate a random initial position in the tube
+            let randomAngle = Math.random() * Math.PI * 2
+            let x = Math.cos(randomAngle) * (Math.random() * (tube.radius - bloodParticlesSystem.middleSpace) + bloodParticlesSystem.middleSpace)
+            let y = Math.sin(randomAngle) * (Math.random() * (tube.radius - 0.5 - bloodParticlesSystem.middleSpace) + bloodParticlesSystem.middleSpace)
+            this.mesh.position.x = x
+            this.mesh.position.y = y
         }
 
         // Make the particle rotate
         this.mesh.rotation.x += this.rotationSpeed
         this.mesh.rotation.z += this.rotationSpeed
 
-        // Muliply by speed factor of the system to influence speed of all particles
+        // Muliply by speed & rotation speed factor of the system to influence behaviour of all particles
         this.speed = this.referenceSpeed * bloodParticlesSystem.speedFactor
+        this.rotationSpeed = this.referenceRotationSpeed * bloodParticlesSystem.rotationSpeedFactor
 
     }
 }
@@ -284,8 +304,9 @@ let bloodParticlesSystem =
     listOfType: [],
     
     // System properties
-    middleSpace: 0.3,
+    middleSpace: 0.5,
     speedFactor: 1,
+    rotationSpeedFactor: 1,
 
     // Particles properties
     minSize: 0.5,
@@ -295,19 +316,41 @@ let bloodParticlesSystem =
     minRotationSpeed: 0.005,
     maxRotationSpeed: 0.07,
 
+    // Animation properties
+    inAnimation: false,
+    previousDemo: null,
+    actualDemo: 0,
+    demoList: [],
+
     setup()
     {
+        // Setup what types of particles we want in the scene
         this.setupListOfType()
+
+        // Create the natural particles flow
         this.setupNaturalFlow()
 
         // Adding the particle to the scene
         scene.add(this.group)
 
-        this.setTransitionEvent()
+        // Setup the list of particles we want in the demonstrations
+        this.setupListOfDemo()
+        // Temporary event to lauch demo
+        window.addEventListener('click', () => this.goToDemo())
+    },
+
+    setupListOfDemo()
+    {
+        // Define list of mesh particles we want to present in the demonstrations
+        this.demoList =
+        [
+            new THREE.Mesh(models.redCellGeometry, normalMaterial)
+        ]
     },
 
     setupListOfType()
     {
+        // Define types and numbers of each particles we want in the system
         this.listOfType =
         [
             {
@@ -318,12 +361,12 @@ let bloodParticlesSystem =
             {
                 geometry: models.plateletGeometry,
                 material: plateletMaterial,
-                number: 10,
+                number: 17,
             },
             {
                 geometry: models.whiteCellGeometry,
                 material: whiteCellMaterial,
-                number: 20,
+                number: 10,
             },
         ]
     },
@@ -359,30 +402,38 @@ let bloodParticlesSystem =
         }
     },
 
-    setTransitionEvent()
+    goToDemo()
     {
-        // Define timeline
-        let timeline = new TimelineLite()
-        timeline.pause()
-        timeline.to(bloodParticlesSystem, 3, {speedFactor: 20, ease: Linear.easeNone})
-                .to(pointLight.position, 2, {z: 20}, '-=2.5')
+        // If the animation is not playing and if the next demo is different from the actual demo then play
+        if (!this.inAnimation && this.previousDemo != this.actualDemo)
+        {
+            this.inAnimation = true
 
-        // Launching timeline when the space bar is pressed
-        window.addEventListener('keydown', _event =>
-        {
-            if(_event.code == 'Space')
+            // Restore pos of the previous mesh
+            if (this.previousDemo != null)
             {
-                timeline.play()
+                let previousMesh = this.demoList[this.previousDemo]
+                TweenLite.to(previousMesh.position, 1, {z: 15})
+                TweenLite.to(previousMesh.position, 0, {z: - tube.length}).delay(1)
             }
-        })
-        window.addEventListener('keyup', _event =>
-        {
-            if(_event.code == 'Space')
-            {
-                timeline.reverse(2)
-            }
-        })
-    }
+    
+            // Add the mesh to the scene
+            let mesh = this.demoList[this.actualDemo]
+            mesh.position.z = - tube.length
+            mesh.rotation.x = Math.PI * 0.15
+            mesh.rotation.z = Math.PI * 0.1
+            scene.add(mesh)
+    
+            // Play the animation
+            let timeline = new TimelineLite({defaultEase: Power1.easeOut})
+            timeline.to(bloodParticlesSystem, 2, {speedFactor: 20})
+                    .to(pointLight.position, 2, {z: 20}, '-=2')
+                    .to(mesh.position, 1, {z: 8.7})
+                    .to(pointLight.position, 1, {z: 11}, '-=0.5')
+                    .to(bloodParticlesSystem, 2, {speedFactor: 0.04}, '-=2.3')
+                    .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.inAnimation = false ; this.previousDemo = this.actualDemo}}, '-=2')
+        }
+    },
 }
 
 /**
