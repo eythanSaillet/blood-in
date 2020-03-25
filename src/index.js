@@ -1,6 +1,6 @@
 import './style/main.styl'
 import * as THREE from 'three'
-import { TweenMax, TimelineLite, Linear, Power0, Power1} from 'gsap'
+import { TweenMax, TimelineLite, Linear, Power3, Power1} from 'gsap'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { TweenLite } from 'gsap/gsap-core';
@@ -72,7 +72,6 @@ let models =
     
     // Defin total number of medels for the loading progress
     numberOfModels: 3,
-    numberOfLoadedModels: 0,
 
     // Define the loader
     gltfLoader: new GLTFLoader(),
@@ -90,7 +89,7 @@ let models =
                 this.redCellGeometry = glb.scene.children[0].children[0].geometry
                 this.redCellGeometry.scale(0.25, 0.25, 0.25)
         
-                this.launchIfLoadingComplete()
+                loader.launchIfLoadingComplete()
             },
         )
         
@@ -105,7 +104,7 @@ let models =
                 this.plateletGeometry = gltf.scene.children[0].children[0].children[0].children[0].children[0].children[0].geometry
                 this.plateletGeometry.scale(0.0007, 0.0007, 0.0007)
         
-                this.launchIfLoadingComplete()
+                loader.launchIfLoadingComplete()
             },
         )
 
@@ -120,22 +119,79 @@ let models =
                 this.whiteCellGeometry = glb.scene.children[0].children[0].geometry
                 this.whiteCellGeometry.scale(0.002, 0.002, 0.002)
         
-                this.launchIfLoadingComplete()
+                loader.launchIfLoadingComplete()
             },
         )
     },
+}
+models.load()
 
-    // Loading function that launch the project when every models are loaded
+/**
+ * Audio
+ */
+
+let audio =
+{
+    numberOfAudio: 2,
+
+    sources:
+    {
+        heartBeat: 'audio/heartBeat.mp3',
+        sceneMusic: 'audio/sceneMusic.mp3',
+    },
+
+    list:
+    {
+        heartBeat: null,
+        sceneMusic: null,
+    },
+
+    load()
+    {
+        for (const _source in this.sources)
+        {
+            // Create the audio and pause it
+            let audio = new Audio()
+            audio.pause()
+
+            // Add loading event for the website loader then set the source
+            audio.addEventListener('canplaythrough', () =>
+            {
+                if (audio.isLoaded != true)
+                {
+                    loader.launchIfLoadingComplete()
+                }
+                audio.isLoaded = true
+            })
+            audio.src = this.sources[_source]
+
+            // Adding the audio to the list
+            this.list[_source] = audio
+        }
+    }
+}
+audio.load()
+
+/**
+ * Website loader
+ */
+
+let loader =
+{
+    numberOfFiles: models.numberOfModels + audio.numberOfAudio,
+    numberOfLoadedFiles: 0,
+
+    // Loading function that launch the project when every files are loaded
     launchIfLoadingComplete()
     {
-        this.numberOfLoadedModels++
-        if (this.numberOfLoadedModels == this.numberOfModels)
+        this.numberOfLoadedFiles++
+        if (this.numberOfLoadedFiles == this.numberOfFiles)
         {
-            bloodParticlesSystem.setup()
+            // bloodParticlesSystem.setup()
+            document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
         }
     },
 }
-models.load()
 
 /**
  * Materials
@@ -321,6 +377,7 @@ let bloodParticlesSystem =
     previousDemo: null,
     actualDemo: 0,
     demoList: [],
+    heartBeatRate: 800,
 
     setup()
     {
@@ -336,7 +393,10 @@ let bloodParticlesSystem =
         // Setup the list of particles we want in the demonstrations
         this.setupListOfDemo()
         // Temporary event to lauch demo
-        window.addEventListener('click', () => this.goToDemo())
+        document.querySelector('.anim').addEventListener('click', () => this.goToDemo())
+
+        // Set heartbeat : audio and light
+        this.setHeartBeat()
     },
 
     setupListOfDemo()
@@ -426,14 +486,26 @@ let bloodParticlesSystem =
     
             // Play the animation
             let timeline = new TimelineLite({defaultEase: Power1.easeOut})
-            timeline.to(bloodParticlesSystem, 2, {speedFactor: 20})
+            timeline.to(bloodParticlesSystem, 2, {speedFactor: 10})
                     .to(pointLight.position, 2, {z: 20}, '-=2')
-                    .to(mesh.position, 1, {z: 8.7})
+                    .to(mesh.position, 3, {z: 8.7, ease: Power3.easeOut}, '-=1')
                     .to(pointLight.position, 1, {z: 11}, '-=0.5')
-                    .to(bloodParticlesSystem, 2, {speedFactor: 0.04}, '-=2.3')
+                    .to(bloodParticlesSystem, 2.5, {speedFactor: 0.04}, '-=2.7')
                     .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.inAnimation = false ; this.previousDemo = this.actualDemo}}, '-=2')
         }
     },
+
+    setHeartBeat()
+    {
+        // Loop that play heartbeat sound according to the heartbeat rate
+        setTimeout(() =>
+        {
+            audio.list['heartBeat'].pause()
+            audio.list['heartBeat'].currentTime = 0.1
+            audio.list['heartBeat'].play()
+            this.setHeartBeat()
+        }, this.heartBeatRate)
+    }
 }
 
 /**
