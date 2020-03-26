@@ -1,22 +1,9 @@
 import './style/main.styl'
 import * as THREE from 'three'
-import { TweenMax, TimelineLite, Linear, Power3, Power1} from 'gsap'
+import { TweenMax, TweenLite, TimelineLite, Linear, Power3, Power1} from 'gsap'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { TweenLite } from 'gsap/gsap-core';
-
-
-/**
- * Cursor
- */
-
-const cursor = { x: 0, y: 0 }
-window.addEventListener('mousemove', (_event) =>
-{
-    cursor.x = _event.clientX / sizes.width - 0.5
-    cursor.y = _event.clientY / sizes.height - 0.5
-})
-
+import Menu from './Menu'
 
 /**
  * Sizes
@@ -26,6 +13,19 @@ const sizes = {}
 sizes.width = window.innerWidth
 sizes.height = window.innerHeight
 
+/**
+ * Cursor
+ */
+
+const cursor = { x: 0, y: 0 }
+window.addEventListener('mousemove', (_event) =>
+{
+    cursor.x = (_event.clientX / window.innerWidth) * 2 - 1
+    cursor.y = ((_event.clientY / window.innerHeight) * 2 - 1) * - 1
+    cursor.speedX = _event.movementX
+    cursor.speedY = - _event.movementY
+    // console.log(_event)
+})
 
 /**
  * Scene
@@ -56,7 +56,7 @@ const pointLightHelper = new THREE.PointLightHelper(pointLight, 0.2)
 scene.add( pointLightHelper )
 
 // Ambient light
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.01)
 scene.add(ambientLight)
 
 /**
@@ -173,6 +173,13 @@ let audio =
 audio.load()
 
 /**
+ * Menu
+ */
+
+let menu
+let menuIsActive = false
+
+/**
  * Website loader
  */
 
@@ -180,45 +187,73 @@ let loader =
 {
     numberOfFiles: models.numberOfModels + audio.numberOfAudio,
     numberOfLoadedFiles: 0,
+    domLoaderOverlay: document.querySelector('.loaderContainer'),
+    domLoaderRedBg: document.querySelector('.loaderContainer .dropBg'),
 
     // Loading function that launch the project when every files are loaded
     launchIfLoadingComplete()
     {
         this.numberOfLoadedFiles++
+        this.actualizeDomLoader()
         if (this.numberOfLoadedFiles == this.numberOfFiles)
         {
-            // bloodParticlesSystem.setup()
-            document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
+            setTimeout(() =>
+            {
+                this.domLoaderOverlay.style.pointerEvent = 'none'
+                TweenLite.to(this.domLoaderOverlay, 1.5, {opacity: 0})
+
+                /**
+                 * LAUNCH PROJECT HERE
+                 */
+
+                document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
+                menu = new Menu(scene, camera, cameraControls, models, materials, menuIsActive)
+                menuIsActive = true
+
+                /**
+                 * LAUNCH PROJECT HERE
+                 */
+            }, 1500)
         }
     },
+
+    // Actualize loading
+    actualizeDomLoader()
+    {
+        TweenLite.to(this.domLoaderRedBg, 0.3, {y: -(this.numberOfLoadedFiles / this.numberOfFiles * 100) + 100})
+    }
 }
 
 /**
  * Materials
  */
 
-// Debug normal material
-const normalMaterial = new THREE.MeshNormalMaterial({
-    side: THREE.DoubleSide,
-})
+let materials =
+{
+    // Debug normal material
+    normalMaterial: new THREE.MeshNormalMaterial({
+        side: THREE.DoubleSide,
+    }),
+    
+    // Red cell material
+    redCellMaterial: new THREE.MeshPhongMaterial({
+        color : new THREE.Color(0x6D1A0B),
+        shininess : 0,
+    }),
+    
+    // Platelet material
+    plateletMaterial: new THREE.MeshPhongMaterial({
+        color : new THREE.Color(0xccaa00),
+        shininess : 0,
+    }),
+    
+    // White cell material
+    whiteCellMaterial: new THREE.MeshPhongMaterial({
+        color : new THREE.Color(0x5093e2),
+        shininess : 0,
+    }),
+}
 
-// Red cell material
-let redCellMaterial = new THREE.MeshPhongMaterial({
-    color : new THREE.Color(0x6D1A0B),
-    shininess : 0,
-})
-
-// Platelet material
-let plateletMaterial = new THREE.MeshPhongMaterial({
-    color : new THREE.Color(0xccaa00),
-    shininess : 0,
-})
-
-// White cell material
-let whiteCellMaterial = new THREE.MeshPhongMaterial({
-    color : new THREE.Color(0x5093e2),
-    shininess : 0,
-})
 
 /**
  * Object
@@ -404,7 +439,7 @@ let bloodParticlesSystem =
         // Define list of mesh particles we want to present in the demonstrations
         this.demoList =
         [
-            new THREE.Mesh(models.redCellGeometry, normalMaterial)
+            new THREE.Mesh(models.redCellGeometry, materials.normalMaterial)
         ]
     },
 
@@ -415,17 +450,17 @@ let bloodParticlesSystem =
         [
             {
                 geometry: models.redCellGeometry,
-                material: redCellMaterial,
+                material: materials.redCellMaterial,
                 number: 55,
             },
             {
                 geometry: models.plateletGeometry,
-                material: plateletMaterial,
+                material: materials.plateletMaterial,
                 number: 17,
             },
             {
                 geometry: models.whiteCellGeometry,
-                material: whiteCellMaterial,
+                material: materials.whiteCellMaterial,
                 number: 10,
             },
         ]
@@ -508,6 +543,10 @@ let bloodParticlesSystem =
     }
 }
 
+// Raycaster
+
+const raycaster = new THREE.Raycaster()
+
 /**
  * Loop
  */
@@ -519,11 +558,37 @@ const loop = () =>
     // CAMERA
     cameraControls.update()
 
-    // Update particles pos
+    // Update scene particles states
     for (const _particle of bloodParticlesSystem.list)
     {
         _particle.udpateState()
     }
+
+    // Update menu particles states
+    if (menuIsActive)
+    {
+        for (const _particle of menu.particlesList)
+        {
+            _particle.updatePos()
+        }
+        // Raycaster
+        raycaster.setFromCamera(cursor, camera)
+        const intersects = raycaster.intersectObjects(scene.children)
+        for (let i = 0; i < intersects.length; i++)
+        {
+            // scene.remove(intersects[i].object)
+            for (const _particle of menu.particlesList)
+            {
+                if(_particle.mesh == intersects[i].object)
+                {
+                    _particle.acc.x = cursor.speedX / 2000
+                    _particle.acc.y = cursor.speedY / 2000
+                }
+            }
+        }
+    }
+
+
 
     // Render
     renderer.render(scene, camera)
