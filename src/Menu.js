@@ -12,7 +12,9 @@ export default class Menu
         this.distanceOfTheCamera = 9
         this.numberOfParticles = 10
         this.particlesList = []
+
         this.particlesGroup = new THREE.Group()
+        this.light = null,
 
         // Particles config
         this.typesOfParticle =
@@ -119,16 +121,12 @@ export default class Menu
         camera.rotation.x = Math.PI / 2
 
         // Light
-        const pointLight = new THREE.PointLight(0xff9999, 3, 5)
-        pointLight.position.set(0, 0, this.depthPos + 0.5)
-        scene.add(pointLight)
+        this.light = new THREE.PointLight(0xff9999, 3, 5)
+        this.light.position.set(0, 0, this.depthPos + 0.5)
+        scene.add(this.light)
         // Helper
-        const pointLightHelper = new THREE.PointLightHelper(pointLight, 0.2)
-        scene.add( pointLightHelper )
-
-
-        //debug material
-        let normalMaterial = new THREE.MeshNormalMaterial()
+        const pointLightHelper = new THREE.PointLightHelper(this.light, 0.2)
+        // scene.add( pointLightHelper )
 
         for (const _type of this.typesOfParticle)
         {

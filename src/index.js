@@ -53,7 +53,7 @@ pointLight.position.set(0, 1, 9)
 // scene.add(pointLight)
 // Helper
 const pointLightHelper = new THREE.PointLightHelper(pointLight, 0.2)
-scene.add( pointLightHelper )
+// scene.add( pointLightHelper )
 
 // Ambient light
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.01)
@@ -124,7 +124,6 @@ let models =
         )
     },
 }
-models.load()
 
 /**
  * Audio
@@ -172,7 +171,6 @@ let audio =
         }
     }
 }
-audio.load()
 
 /**
  * Menu
@@ -184,6 +182,13 @@ let menuIsActive = false
 /**
  * Website loader
  */
+
+// Launch loading when the window is loaded
+window.addEventListener('load', () =>
+{
+    models.load()
+    audio.load()
+})
 
 let launcher =
 {
@@ -213,12 +218,13 @@ let launcher =
                 {
                     // Make the loader overlay disappear
                     this.$loaderOverlay.style.pointerEvents = 'none'
-                    TweenLite.to(this.$loaderOverlay, 0.7, {opacity: 0})
+                    TweenLite.to(this.$loaderOverlay, 1, {opacity: 0, ease: Power3.easeIn})
 
                     // Launch menu music
                     audio.list.menuMusic.loop = true
-                    audio.list.menuMusic.volume = 0.4
+                    audio.list.menuMusic.volume = 0
                     audio.list.menuMusic.play()
+                    let menuMusicFadeIn = TweenLite.to(audio.list.menuMusic, 3, {volume: 0.3})
     
                     // Launch menu three.js animation
                     menu = new Menu(scene, camera, cameraControls, models, materials, menuIsActive)
@@ -228,14 +234,41 @@ let launcher =
                     // Launch scene when user click on explore menu button
                     this.$menuStartButton.addEventListener('click', () =>
                     {
+                        // Define start animation timeline
+                        let startTimeline = new TimelineLite()
+
+                        // Kill tweenlite that fade in the music then fade out the menu music
+                        menuMusicFadeIn.kill()
+                        startTimeline.to(audio.list.menuMusic, 1, {volume: 0})
+
+                        // Make the menu disappear
+                        this.$menuStartButton.style.pointerEvents = 'none'
+                        startTimeline.to(this.$menuStartButton, 0.8, {opacity: 0}, '-=1')
+                        startTimeline.to(this.$menuTitle, 0.8, {opacity: 0}, '-=0.6')
+
+                        // Play scene music
+                        audio.list.sceneMusic.loop = true
+                        audio.list.sceneMusic.volume = 0
+                        audio.list.sceneMusic.play()
+                        startTimeline.to(audio.list.sceneMusic, 2, {volume: 0.3})
+
+                        // Move the camera on the scene
+                        startTimeline.to(camera.position, 1, {z: 10, ease: Power3.easeInOut},'-=2.5')
+                        
+                        // Move the menu light to become scene light
+                        startTimeline.to(menu.light.position, 1, {y: 1, z: 9, ease: Power3.easeInOut},'-=0.3')
+                        startTimeline.to(menu.light, 1, {intensity: 1.2, ease: Power1.easeInOut},'-=1.5')
+                        startTimeline.to(menu.light, 1, {distance: 30, ease: Power1.easeInOut},'-=1')
+
                         /**
-                         * LAUNCH PROJECT HERE
+                         * LAUNCH SCENE HERE
                          */
-        
+
+                        bloodParticlesSystem.setup()
                         // document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
         
                         /**
-                         * LAUNCH PROJECT HERE
+                         * LAUNCH SCENE HERE
                          */
                     })
                 })
@@ -457,7 +490,7 @@ let bloodParticlesSystem =
         document.querySelector('.anim').addEventListener('click', () => this.goToDemo())
 
         // Set heartbeat : audio and light
-        this.setHeartBeat()
+        // this.setHeartBeat()
     },
 
     setupListOfDemo()
@@ -548,9 +581,9 @@ let bloodParticlesSystem =
             // Play the animation
             let timeline = new TimelineLite({defaultEase: Power1.easeOut})
             timeline.to(bloodParticlesSystem, 2, {speedFactor: 10})
-                    .to(pointLight.position, 2, {z: 20}, '-=2')
+                    .to(menu.light.position, 2, {z: 20}, '-=2')
                     .to(mesh.position, 3, {z: 8.7, ease: Power3.easeOut}, '-=1')
-                    .to(pointLight.position, 1, {z: 11}, '-=0.5')
+                    .to(menu.light.position, 1, {z: 11}, '-=0.5')
                     .to(bloodParticlesSystem, 2.5, {speedFactor: 0.04}, '-=2.7')
                     .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.inAnimation = false ; this.previousDemo = this.actualDemo}}, '-=2')
         }
