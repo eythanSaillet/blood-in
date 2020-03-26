@@ -2,21 +2,9 @@ import './style/main.styl'
 import * as THREE from 'three'
 import { TweenMax, TimelineLite, Linear, Power3, Power1} from 'gsap'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { TweenLite } from 'gsap/gsap-core';
-
-
-/**
- * Cursor
- */
-
-const cursor = { x: 0, y: 0 }
-window.addEventListener('mousemove', (_event) =>
-{
-    cursor.x = _event.clientX / sizes.width - 0.5
-    cursor.y = _event.clientY / sizes.height - 0.5
-})
-
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import Menu from './Menu'
+import { gsap } from 'gsap'
 
 /**
  * Sizes
@@ -26,6 +14,19 @@ const sizes = {}
 sizes.width = window.innerWidth
 sizes.height = window.innerHeight
 
+/**
+ * Cursor
+ */
+
+const cursor = { x: 0, y: 0 }
+window.addEventListener('mousemove', (_event) =>
+{
+    cursor.x = (_event.clientX / window.innerWidth) * 2 - 1
+    cursor.y = ((_event.clientY / window.innerHeight) * 2 - 1) * - 1
+    cursor.speedX = _event.movementX
+    cursor.speedY = - _event.movementY
+    // console.log(_event)
+})
 
 /**
  * Scene
@@ -50,13 +51,13 @@ scene.add(camera)
  // Point light
 const pointLight = new THREE.PointLight(0xff9999, 2, 30)
 pointLight.position.set(0, 1, 9)
-scene.add(pointLight)
+// scene.add(pointLight)
 // Helper
 const pointLightHelper = new THREE.PointLightHelper(pointLight, 0.2)
-scene.add( pointLightHelper )
+// scene.add( pointLightHelper )
 
 // Ambient light
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.01)
 scene.add(ambientLight)
 
 /**
@@ -89,7 +90,7 @@ let models =
                 this.redCellGeometry = glb.scene.children[0].children[0].geometry
                 this.redCellGeometry.scale(0.25, 0.25, 0.25)
         
-                loader.launchIfLoadingComplete()
+                launcher.launchIfLoadingComplete()
             },
         )
         
@@ -104,7 +105,7 @@ let models =
                 this.plateletGeometry = gltf.scene.children[0].children[0].children[0].children[0].children[0].children[0].geometry
                 this.plateletGeometry.scale(0.0007, 0.0007, 0.0007)
         
-                loader.launchIfLoadingComplete()
+                launcher.launchIfLoadingComplete()
             },
         )
 
@@ -119,12 +120,11 @@ let models =
                 this.whiteCellGeometry = glb.scene.children[0].children[0].geometry
                 this.whiteCellGeometry.scale(0.002, 0.002, 0.002)
         
-                loader.launchIfLoadingComplete()
+                launcher.launchIfLoadingComplete()
             },
         )
     },
 }
-models.load()
 
 /**
  * Audio
@@ -132,18 +132,20 @@ models.load()
 
 let audio =
 {
-    numberOfAudio: 2,
+    numberOfAudio: 3,
 
     sources:
     {
         heartBeat: 'audio/heartBeat.mp3',
         sceneMusic: 'audio/sceneMusic.mp3',
+        menuMusic: 'audio/menuMusic.mp3',
     },
 
     list:
     {
         heartBeat: null,
         sceneMusic: null,
+        menuMusic: null,
     },
 
     load()
@@ -159,7 +161,7 @@ let audio =
             {
                 if (audio.isLoaded != true)
                 {
-                    loader.launchIfLoadingComplete()
+                    launcher.launchIfLoadingComplete()
                 }
                 audio.isLoaded = true
             })
@@ -170,55 +172,156 @@ let audio =
         }
     }
 }
-audio.load()
+
+/**
+ * Menu
+ */
+
+let menu
+let menuIsActive = false
 
 /**
  * Website loader
  */
 
-let loader =
+// Launch loading when the window is loaded
+window.addEventListener('load', () =>
 {
+    models.load()
+    audio.load()
+})
+
+let launcher =
+{
+    isLaunched: false,
+
     numberOfFiles: models.numberOfModels + audio.numberOfAudio,
     numberOfLoadedFiles: 0,
+
+    $loaderOverlay: document.querySelector('.loaderOverlay'),
+    $loaderRedBg: document.querySelector('.loaderOverlay .dropBgRed'),
+    $startInstruction: document.querySelector('.loaderOverlay .startInstruction'),
+    $menuStartButton: document.querySelector('.menuOverlay .startButton'),
+    $menuTitle: document.querySelector('.menuOverlay .title'),
 
     // Loading function that launch the project when every files are loaded
     launchIfLoadingComplete()
     {
         this.numberOfLoadedFiles++
+        this.actualizeDomLoader()
         if (this.numberOfLoadedFiles == this.numberOfFiles)
         {
-            // bloodParticlesSystem.setup()
-            document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
+            setTimeout(() =>
+            {
+                // Make appear the start instruction
+                gsap.to(this.$startInstruction, 1, {opacity: 1})
+
+                // Then launch the project on any key press
+                window.addEventListener('keypress', () =>
+                {
+                    // Make sure we can launch only on time
+                    if (this.isLaunched == false)
+                    {
+                        this.isLaunched = true
+
+                        // Make the loader overlay disappear
+                        this.$loaderOverlay.style.pointerEvents = 'none'
+                        gsap.to(this.$loaderOverlay, 1, {opacity: 0, ease: Power3.easeIn})
+    
+                        // Launch menu music
+                        audio.list.menuMusic.loop = true
+                        audio.list.menuMusic.volume = 0
+                        audio.list.menuMusic.play()
+                        let menuMusicFadeIn = gsap.to(audio.list.menuMusic, 3, {volume: 0.3})
+        
+                        // Launch menu three.js animation
+                        menu = new Menu(scene, camera, cameraControls, models, materials, menuIsActive)
+                        scene.add(menu.particlesGroup)
+                        menuIsActive = true
+    
+                        // Launch scene when user click on explore menu button
+                        this.$menuStartButton.addEventListener('click', () =>
+                        {
+                            // Define start animation timeline
+                            let startTimeline = new TimelineLite()
+    
+                            // Kill gsap that fade in the music then fade out the menu music
+                            menuMusicFadeIn.kill()
+                            startTimeline.to(audio.list.menuMusic, 1, {volume: 0})
+    
+                            // Make the menu disappear
+                            this.$menuStartButton.style.pointerEvents = 'none'
+                            startTimeline.to(this.$menuStartButton, 0.8, {opacity: 0}, '-=1')
+                            startTimeline.to(this.$menuTitle, 0.8, {opacity: 0}, '-=0.6')
+    
+                            // Play scene music
+                            audio.list.sceneMusic.loop = true
+                            audio.list.sceneMusic.volume = 0
+                            audio.list.sceneMusic.play()
+                            startTimeline.to(audio.list.sceneMusic, 2, {volume: 0.3})
+    
+                            // Move the camera on the scene
+                            startTimeline.to(camera.position, 1, {z: 10, ease: Power3.easeInOut},'-=2.5')
+                            
+                            // Move the menu light to become scene light
+                            startTimeline.to(menu.light.position, 1, {y: 1, z: 9, ease: Power3.easeInOut},'-=0.3')
+                            startTimeline.to(menu.light, 1, {intensity: 1.2, ease: Power1.easeInOut},'-=1.5')
+                            startTimeline.to(menu.light, 1, {distance: 30, ease: Power1.easeInOut},'-=1')
+    
+                            /**
+                             * LAUNCH SCENE HERE
+                             */
+    
+                            bloodParticlesSystem.setup()
+                            // document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
+            
+                            /**
+                             * LAUNCH SCENE HERE
+                             */
+                        })
+                    }
+                })
+            }, 700)
         }
     },
+
+    // Actualize loading
+    actualizeDomLoader()
+    {
+        gsap.to(this.$loaderRedBg, 0.3, {y: `${Math.round(-(this.numberOfLoadedFiles / this.numberOfFiles * 100) + 102)}%`})
+    }
 }
 
 /**
  * Materials
  */
 
-// Debug normal material
-const normalMaterial = new THREE.MeshNormalMaterial({
-    side: THREE.DoubleSide,
-})
+let materials =
+{
+    // Debug normal material
+    normalMaterial: new THREE.MeshNormalMaterial({
+        side: THREE.DoubleSide,
+    }),
+    
+    // Red cell material
+    redCellMaterial: new THREE.MeshPhongMaterial({
+        color : new THREE.Color(0x6D1A0B),
+        shininess : 0,
+    }),
+    
+    // Platelet material
+    plateletMaterial: new THREE.MeshPhongMaterial({
+        color : new THREE.Color(0xccaa00),
+        shininess : 0,
+    }),
+    
+    // White cell material
+    whiteCellMaterial: new THREE.MeshPhongMaterial({
+        color : new THREE.Color(0x5093e2),
+        shininess : 0,
+    }),
+}
 
-// Red cell material
-let redCellMaterial = new THREE.MeshPhongMaterial({
-    color : new THREE.Color(0x6D1A0B),
-    shininess : 0,
-})
-
-// Platelet material
-let plateletMaterial = new THREE.MeshPhongMaterial({
-    color : new THREE.Color(0xccaa00),
-    shininess : 0,
-})
-
-// White cell material
-let whiteCellMaterial = new THREE.MeshPhongMaterial({
-    color : new THREE.Color(0x5093e2),
-    shininess : 0,
-})
 
 /**
  * Object
@@ -396,7 +499,7 @@ let bloodParticlesSystem =
         document.querySelector('.anim').addEventListener('click', () => this.goToDemo())
 
         // Set heartbeat : audio and light
-        this.setHeartBeat()
+        // this.setHeartBeat()
     },
 
     setupListOfDemo()
@@ -404,7 +507,7 @@ let bloodParticlesSystem =
         // Define list of mesh particles we want to present in the demonstrations
         this.demoList =
         [
-            new THREE.Mesh(models.redCellGeometry, normalMaterial)
+            new THREE.Mesh(models.redCellGeometry, materials.normalMaterial)
         ]
     },
 
@@ -415,17 +518,17 @@ let bloodParticlesSystem =
         [
             {
                 geometry: models.redCellGeometry,
-                material: redCellMaterial,
+                material: materials.redCellMaterial,
                 number: 55,
             },
             {
                 geometry: models.plateletGeometry,
-                material: plateletMaterial,
+                material: materials.plateletMaterial,
                 number: 17,
             },
             {
                 geometry: models.whiteCellGeometry,
-                material: whiteCellMaterial,
+                material: materials.whiteCellMaterial,
                 number: 10,
             },
         ]
@@ -473,8 +576,8 @@ let bloodParticlesSystem =
             if (this.previousDemo != null)
             {
                 let previousMesh = this.demoList[this.previousDemo]
-                TweenLite.to(previousMesh.position, 1, {z: 15})
-                TweenLite.to(previousMesh.position, 0, {z: - tube.length}).delay(1)
+                gsap.to(previousMesh.position, 1, {z: 15})
+                gsap.to(previousMesh.position, 0, {z: - tube.length}).delay(1)
             }
     
             // Add the mesh to the scene
@@ -487,9 +590,9 @@ let bloodParticlesSystem =
             // Play the animation
             let timeline = new TimelineLite({defaultEase: Power1.easeOut})
             timeline.to(bloodParticlesSystem, 2, {speedFactor: 10})
-                    .to(pointLight.position, 2, {z: 20}, '-=2')
+                    .to(menu.light.position, 2, {z: 20}, '-=2')
                     .to(mesh.position, 3, {z: 8.7, ease: Power3.easeOut}, '-=1')
-                    .to(pointLight.position, 1, {z: 11}, '-=0.5')
+                    .to(menu.light.position, 1, {z: 11}, '-=0.5')
                     .to(bloodParticlesSystem, 2.5, {speedFactor: 0.04}, '-=2.7')
                     .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.inAnimation = false ; this.previousDemo = this.actualDemo}}, '-=2')
         }
@@ -508,6 +611,10 @@ let bloodParticlesSystem =
     }
 }
 
+// Raycaster
+
+const raycaster = new THREE.Raycaster()
+
 /**
  * Loop
  */
@@ -519,11 +626,37 @@ const loop = () =>
     // CAMERA
     cameraControls.update()
 
-    // Update particles pos
+    // Update scene particles states
     for (const _particle of bloodParticlesSystem.list)
     {
         _particle.udpateState()
     }
+
+    // Update menu particles states
+    if (menuIsActive)
+    {
+        for (const _particle of menu.particlesList)
+        {
+            _particle.updatePos()
+        }
+        // Raycaster
+        raycaster.setFromCamera(cursor, camera)
+        const intersects = raycaster.intersectObjects(scene.children)
+        for (let i = 0; i < intersects.length; i++)
+        {
+            // scene.remove(intersects[i].object)
+            for (const _particle of menu.particlesList)
+            {
+                if(_particle.mesh == intersects[i].object)
+                {
+                    _particle.acc.x = cursor.speedX / 2000
+                    _particle.acc.y = cursor.speedY / 2000
+                }
+            }
+        }
+    }
+
+
 
     // Render
     renderer.render(scene, camera)

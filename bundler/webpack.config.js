@@ -56,7 +56,7 @@ module.exports = {
                 [
                     {
                         loader: 'file-loader',
-                        options: {outputPath: 'images/'}
+                        options: {esModule: false}
                     }
                 ]
             },
