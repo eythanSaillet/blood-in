@@ -12,6 +12,7 @@ export default class Menu
         this.distanceOfTheCamera = 9
         this.numberOfParticles = 10
         this.particlesList = []
+        this.particlesGroup = new THREE.Group()
 
         // Particles config
         this.typesOfParticle =
@@ -35,7 +36,7 @@ export default class Menu
 
         class Particle
         {
-            constructor(geometry, material, width, height, depthPos)
+            constructor(geometry, material, width, height, depthPos, group)
             {
                 // System properties
                 this.width = width
@@ -46,7 +47,7 @@ export default class Menu
                 this.minSize = 0.5
                 this.maxSize = 1
                 this.minSpeed = 0.005
-                this.maxSpeed = 0.01
+                this.maxSpeed = 0.007
                 this.minRotationSpeed = 0.005
                 this.maxRotationSpeed = 0.04
 
@@ -75,7 +76,7 @@ export default class Menu
                 this.mesh = new THREE.Mesh(geometry, material)
                 this.mesh.position.set(this.pos.x, this.pos.y, this.depthPos)
                 this.mesh.scale.set(this.size, this.size, this.size)
-                scene.add(this.mesh)
+                group.add(this.mesh)
             }
 
             updatePos()
@@ -133,7 +134,7 @@ export default class Menu
         {
             for (let i = 0; i < _type.number; i++)
             {
-                this.particlesList.push(new Particle(_type.geometry, _type.material, this.width, this.height, this.depthPos - this.distanceOfTheCamera + Math.random() * this.depth))
+                this.particlesList.push(new Particle(_type.geometry, _type.material, this.width, this.height, this.depthPos - this.distanceOfTheCamera + Math.random() * this.depth, this.particlesGroup))
             }
         }
 

@@ -50,7 +50,7 @@ scene.add(camera)
  // Point light
 const pointLight = new THREE.PointLight(0xff9999, 2, 30)
 pointLight.position.set(0, 1, 9)
-scene.add(pointLight)
+// scene.add(pointLight)
 // Helper
 const pointLightHelper = new THREE.PointLightHelper(pointLight, 0.2)
 scene.add( pointLightHelper )
@@ -89,7 +89,7 @@ let models =
                 this.redCellGeometry = glb.scene.children[0].children[0].geometry
                 this.redCellGeometry.scale(0.25, 0.25, 0.25)
         
-                loader.launchIfLoadingComplete()
+                launcher.launchIfLoadingComplete()
             },
         )
         
@@ -104,7 +104,7 @@ let models =
                 this.plateletGeometry = gltf.scene.children[0].children[0].children[0].children[0].children[0].children[0].geometry
                 this.plateletGeometry.scale(0.0007, 0.0007, 0.0007)
         
-                loader.launchIfLoadingComplete()
+                launcher.launchIfLoadingComplete()
             },
         )
 
@@ -119,7 +119,7 @@ let models =
                 this.whiteCellGeometry = glb.scene.children[0].children[0].geometry
                 this.whiteCellGeometry.scale(0.002, 0.002, 0.002)
         
-                loader.launchIfLoadingComplete()
+                launcher.launchIfLoadingComplete()
             },
         )
     },
@@ -132,18 +132,20 @@ models.load()
 
 let audio =
 {
-    numberOfAudio: 2,
+    numberOfAudio: 3,
 
     sources:
     {
         heartBeat: 'audio/heartBeat.mp3',
         sceneMusic: 'audio/sceneMusic.mp3',
+        menuMusic: 'audio/menuMusic.mp3',
     },
 
     list:
     {
         heartBeat: null,
         sceneMusic: null,
+        menuMusic: null,
     },
 
     load()
@@ -159,7 +161,7 @@ let audio =
             {
                 if (audio.isLoaded != true)
                 {
-                    loader.launchIfLoadingComplete()
+                    launcher.launchIfLoadingComplete()
                 }
                 audio.isLoaded = true
             })
@@ -183,12 +185,16 @@ let menuIsActive = false
  * Website loader
  */
 
-let loader =
+let launcher =
 {
     numberOfFiles: models.numberOfModels + audio.numberOfAudio,
     numberOfLoadedFiles: 0,
-    domLoaderOverlay: document.querySelector('.loaderContainer'),
-    domLoaderRedBg: document.querySelector('.loaderContainer .dropBg'),
+
+    $loaderOverlay: document.querySelector('.loaderOverlay'),
+    $loaderRedBg: document.querySelector('.loaderOverlay .dropBgRed'),
+    $startInstruction: document.querySelector('.loaderOverlay .startInstruction'),
+    $menuStartButton: document.querySelector('.menuOverlay .startButton'),
+    $menuTitle: document.querySelector('.menuOverlay .title'),
 
     // Loading function that launch the project when every files are loaded
     launchIfLoadingComplete()
@@ -199,28 +205,48 @@ let loader =
         {
             setTimeout(() =>
             {
-                this.domLoaderOverlay.style.pointerEvent = 'none'
-                TweenLite.to(this.domLoaderOverlay, 1.5, {opacity: 0})
+                // Make appear the start instruction
+                TweenLite.to(this.$startInstruction, 1, {opacity: 1})
 
-                /**
-                 * LAUNCH PROJECT HERE
-                 */
+                // Then launch the project on any key press
+                window.addEventListener('keypress', () =>
+                {
+                    // Make the loader overlay disappear
+                    this.$loaderOverlay.style.pointerEvents = 'none'
+                    TweenLite.to(this.$loaderOverlay, 0.7, {opacity: 0})
 
-                document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
-                menu = new Menu(scene, camera, cameraControls, models, materials, menuIsActive)
-                menuIsActive = true
+                    // Launch menu music
+                    audio.list.menuMusic.loop = true
+                    audio.list.menuMusic.volume = 0.4
+                    audio.list.menuMusic.play()
+    
+                    // Launch menu three.js animation
+                    menu = new Menu(scene, camera, cameraControls, models, materials, menuIsActive)
+                    scene.add(menu.particlesGroup)
+                    menuIsActive = true
 
-                /**
-                 * LAUNCH PROJECT HERE
-                 */
-            }, 1500)
+                    // Launch scene when user click on explore menu button
+                    this.$menuStartButton.addEventListener('click', () =>
+                    {
+                        /**
+                         * LAUNCH PROJECT HERE
+                         */
+        
+                        // document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
+        
+                        /**
+                         * LAUNCH PROJECT HERE
+                         */
+                    })
+                })
+            }, 700)
         }
     },
 
     // Actualize loading
     actualizeDomLoader()
     {
-        TweenLite.to(this.domLoaderRedBg, 0.3, {y: -(this.numberOfLoadedFiles / this.numberOfFiles * 100) + 100})
+        TweenLite.to(this.$loaderRedBg, 0.3, {y: -(this.numberOfLoadedFiles / this.numberOfFiles * 100) + 102})
     }
 }
 
