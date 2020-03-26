@@ -198,6 +198,7 @@ window.addEventListener('load', () =>
     models.load()
     audio.load()
     bloodParticlesSystem.setupCellsTexts()
+    window.focus()
 })
 
 let launcher =
@@ -462,7 +463,6 @@ class BloodParticle
         // Muliply by speed & rotation speed factor of the system to influence behaviour of all particles
         this.speed = this.referenceSpeed * bloodParticlesSystem.speedFactor
         this.rotationSpeed = this.referenceRotationSpeed * bloodParticlesSystem.rotationSpeedFactor
-
     }
 }
 
@@ -748,9 +748,6 @@ let bloodParticlesSystem =
             audio.list['heartBeat'].playbackRate = this.heartBeatRateFactor * 0.8
             audio.list['heartBeat'].currentTime = 0
             audio.list['heartBeat'].play()
-            // gsap.to(audio.list['heartBeat'], 0.2, {volume: 0, onComplete: () =>
-            // {
-            // }})
             this.setHeartBeat()
         }, this.heartBeatRate / this.heartBeatRateFactor)
     }
