@@ -351,7 +351,7 @@ let tube = {
     build()
     {
         // Create an empty array to stores the points
-        const points = [];
+        const points = []
         
         // Define points along Z axis
         for (let i = 0; i < this.length; i++ )
@@ -490,7 +490,8 @@ let bloodParticlesSystem =
     previousDemo: null,
     actualDemo: 0,
     demoList: [],
-    heartBeatRate: 800,
+    heartBeatRate: 1000,
+    heartBeatRateFactor: 1,
 
     // Cells descriptions
     descriptionRings: null,
@@ -520,7 +521,7 @@ let bloodParticlesSystem =
         document.querySelector('.nextDemo').addEventListener('click', () => this.nextDemo())
 
         // Set heartbeat : audio and light
-        // this.setHeartBeat()
+        this.setHeartBeat()
     },
 
     setupListOfDemo()
@@ -528,10 +529,11 @@ let bloodParticlesSystem =
         // Define list of mesh particles we want to present in the demonstrations
         this.demoList =
         [
-            new THREE.Mesh(models.redCellGeometry, materials.normalMaterial),
-            new THREE.Mesh(models.whiteCellGeometry, materials.normalMaterial),
-            new THREE.Mesh(models.plateletGeometry, materials.normalMaterial),
+            new THREE.Mesh(models.redCellGeometry, materials.redCellMaterial),
+            new THREE.Mesh(models.whiteCellGeometry, materials.whiteCellMaterial),
+            new THREE.Mesh(models.plateletGeometry, materials.plateletMaterial),
         ]
+        this.demoList[2].scale.set(1.8, 1.8, 1.8)
     },
 
     setupListOfType()
@@ -629,12 +631,19 @@ let bloodParticlesSystem =
             // Apply on rings
             this.descriptionRings.group.rotation.y = x
             this.descriptionRings.group.rotation.x = y
+
             // Apply on redCell description
             this.redCellTexts.group.rotation.y = x
             this.redCellTexts.group.rotation.x = y
+
+
             // Apply on whiteCell description
             this.whiteCellTexts.group.rotation.y = x
             this.whiteCellTexts.group.rotation.x = y
+
+            // this.demoList[1].rotation.y = x
+            // this.demoList[1].rotation.x = y
+
             // Apply on platelet description
             this.plateletTexts.group.rotation.y = x
             this.plateletTexts.group.rotation.x = y
@@ -644,8 +653,8 @@ let bloodParticlesSystem =
     makeAppearCellDescription()
     {
         // Play tweens for fade in rings animation
-        gsap.from(this.descriptionRings.group.children[0].scale, 1.5, {x: 0, y: 0, z: 0})
-        gsap.from(this.descriptionRings.group.children[1].scale, 1.5, {x: 0, y: 0, z: 0})
+        gsap.from(this.descriptionRings.group.children[0].scale, 0.7, {x: 0, y: 0, z: 0})
+        gsap.from(this.descriptionRings.group.children[1].scale, 0.7, {x: 0, y: 0, z: 0})
 
         // Then add rings group to the scene
         scene.add(this.descriptionRings.group)
@@ -655,14 +664,14 @@ let bloodParticlesSystem =
 
         // Play tweens for fade in text animation
         // Lines
-        gsap.from(texts.group.children[0].scale, 1.5, {x: 0, y: 0, z: 0})
-        gsap.from(texts.group.children[1].scale, 1.5, {x: 0, y: 0, z: 0})
+        gsap.from(texts.group.children[0].scale, 1, {x: 0, y: 0, z: 0})
+        gsap.from(texts.group.children[1].scale, 1, {x: 0, y: 0, z: 0})
         // Titles
         gsap.from(texts.group.children[2].position, 1.5, {x: 5})
         gsap.from(texts.group.children[3].position, 1.5, {x: -5})
         // Texts
         gsap.from(texts.group.children[4].position, 1.5, {x: 5})
-        gsap.from(texts.group.children[5].position, 1.5, {x: -5})
+        gsap.from(texts.group.children[5].position, 1.5, {x: -5, onComplete: () => {this.inAnimation = false}})
 
         // Then add text group to the scene
         scene.add(texts.group)
@@ -704,12 +713,17 @@ let bloodParticlesSystem =
     
             // Play the animation
             let timeline = new TimelineLite({defaultEase: Power1.easeOut})
-            timeline.to(bloodParticlesSystem, 2, {speedFactor: 10})
-                    .to(menu.light.position, 2, {z: 20}, '-=2')
+            console.log(audio.list.sceneMusic.volume)
+            timeline.to(bloodParticlesSystem, 3, {speedFactor: 9})
+                    .to(audio.list.sceneMusic, 1, {volume: 0.3}, '-=1')
+                    .to(bloodParticlesSystem, 1, {heartBeatRateFactor: 1.8}, '-=4')
+                    .to(menu.light.position, 2, {z: 20}, '-=3')
                     .to(mesh.position, 3, {z: 8.7, ease: Power3.easeOut}, '-=1')
                     .to(menu.light.position, 1, {z: 11}, '-=0.5')
                     .to(bloodParticlesSystem, 2.5, {speedFactor: 0.04}, '-=2.7')
-                    .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.inAnimation = false ; this.previousDemo = this.actualDemo ; this.setupCellDescriptionState() ; this.makeAppearCellDescription()}}, '-=2')
+                    .to(bloodParticlesSystem, 1, {heartBeatRateFactor: 0.5}, '-=2.5')
+                    .to(audio.list.sceneMusic, 1, {volume: 0.05}, '-=1.7')
+                    .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.previousDemo = this.actualDemo ; this.setupCellDescriptionState() ; this.makeAppearCellDescription()}}, '-=2')
         }
     },
 
@@ -726,14 +740,19 @@ let bloodParticlesSystem =
 
     setHeartBeat()
     {
+        audio.list['heartBeat'].volume = 0.6
         // Loop that play heartbeat sound according to the heartbeat rate
         setTimeout(() =>
         {
             audio.list['heartBeat'].pause()
-            audio.list['heartBeat'].currentTime = 0.1
+            audio.list['heartBeat'].playbackRate = this.heartBeatRateFactor * 0.8
+            audio.list['heartBeat'].currentTime = 0
             audio.list['heartBeat'].play()
+            // gsap.to(audio.list['heartBeat'], 0.2, {volume: 0, onComplete: () =>
+            // {
+            // }})
             this.setHeartBeat()
-        }, this.heartBeatRate)
+        }, this.heartBeatRate / this.heartBeatRateFactor)
     }
 }
 
