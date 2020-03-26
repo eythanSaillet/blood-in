@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-export default class RingRedCell{
+export default class RingsCells{
     constructor(){
         this.group = new THREE.Group()
 
