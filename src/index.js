@@ -245,7 +245,7 @@ let launcher =
                         let menuMusicFadeIn = gsap.to(audio.list.menuMusic, 3, {volume: 0.3})
         
                         // Launch menu three.js animation
-                        menu = new Menu(scene, camera, cameraControls, models, materials, menuIsActive)
+                        menu = new Menu(scene, camera, null, models, materials, menuIsActive)
                         scene.add(menu.particlesGroup)
                         menuIsActive = true
     
@@ -398,9 +398,9 @@ renderer.render(scene, camera)
  * Camera Controls
  */
 
-const cameraControls = new OrbitControls(camera, renderer.domElement)
-cameraControls.zoomSpeed = 0.3
-cameraControls.enableDamping = true
+// const cameraControls = new OrbitControls(camera, renderer.domElement)
+// cameraControls.zoomSpeed = 0.3
+// cameraControls.enableDamping = true
 
 
 /**
@@ -766,7 +766,7 @@ const loop = () =>
     window.requestAnimationFrame(loop)
     
     // CAMERA
-    cameraControls.update()
+    // cameraControls.update()
 
     // Update scene particles states
     for (const _particle of bloodParticlesSystem.list)
