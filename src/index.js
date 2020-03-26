@@ -1,9 +1,10 @@
 import './style/main.styl'
 import * as THREE from 'three'
-import { TweenMax, TweenLite, TimelineLite, Linear, Power3, Power1} from 'gsap'
+import { TweenMax, TimelineLite, Linear, Power3, Power1} from 'gsap'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import Menu from './Menu'
+import { gsap } from 'gsap'
 
 /**
  * Sizes
@@ -192,6 +193,8 @@ window.addEventListener('load', () =>
 
 let launcher =
 {
+    isLaunched: false,
+
     numberOfFiles: models.numberOfModels + audio.numberOfAudio,
     numberOfLoadedFiles: 0,
 
@@ -211,66 +214,72 @@ let launcher =
             setTimeout(() =>
             {
                 // Make appear the start instruction
-                TweenLite.to(this.$startInstruction, 1, {opacity: 1})
+                gsap.to(this.$startInstruction, 1, {opacity: 1})
 
                 // Then launch the project on any key press
                 window.addEventListener('keypress', () =>
                 {
-                    // Make the loader overlay disappear
-                    this.$loaderOverlay.style.pointerEvents = 'none'
-                    TweenLite.to(this.$loaderOverlay, 1, {opacity: 0, ease: Power3.easeIn})
-
-                    // Launch menu music
-                    audio.list.menuMusic.loop = true
-                    audio.list.menuMusic.volume = 0
-                    audio.list.menuMusic.play()
-                    let menuMusicFadeIn = TweenLite.to(audio.list.menuMusic, 3, {volume: 0.3})
-    
-                    // Launch menu three.js animation
-                    menu = new Menu(scene, camera, cameraControls, models, materials, menuIsActive)
-                    scene.add(menu.particlesGroup)
-                    menuIsActive = true
-
-                    // Launch scene when user click on explore menu button
-                    this.$menuStartButton.addEventListener('click', () =>
+                    // Make sure we can launch only on time
+                    if (this.isLaunched == false)
                     {
-                        // Define start animation timeline
-                        let startTimeline = new TimelineLite()
+                        this.isLaunched = true
 
-                        // Kill tweenlite that fade in the music then fade out the menu music
-                        menuMusicFadeIn.kill()
-                        startTimeline.to(audio.list.menuMusic, 1, {volume: 0})
-
-                        // Make the menu disappear
-                        this.$menuStartButton.style.pointerEvents = 'none'
-                        startTimeline.to(this.$menuStartButton, 0.8, {opacity: 0}, '-=1')
-                        startTimeline.to(this.$menuTitle, 0.8, {opacity: 0}, '-=0.6')
-
-                        // Play scene music
-                        audio.list.sceneMusic.loop = true
-                        audio.list.sceneMusic.volume = 0
-                        audio.list.sceneMusic.play()
-                        startTimeline.to(audio.list.sceneMusic, 2, {volume: 0.3})
-
-                        // Move the camera on the scene
-                        startTimeline.to(camera.position, 1, {z: 10, ease: Power3.easeInOut},'-=2.5')
-                        
-                        // Move the menu light to become scene light
-                        startTimeline.to(menu.light.position, 1, {y: 1, z: 9, ease: Power3.easeInOut},'-=0.3')
-                        startTimeline.to(menu.light, 1, {intensity: 1.2, ease: Power1.easeInOut},'-=1.5')
-                        startTimeline.to(menu.light, 1, {distance: 30, ease: Power1.easeInOut},'-=1')
-
-                        /**
-                         * LAUNCH SCENE HERE
-                         */
-
-                        bloodParticlesSystem.setup()
-                        // document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
+                        // Make the loader overlay disappear
+                        this.$loaderOverlay.style.pointerEvents = 'none'
+                        gsap.to(this.$loaderOverlay, 1, {opacity: 0, ease: Power3.easeIn})
+    
+                        // Launch menu music
+                        audio.list.menuMusic.loop = true
+                        audio.list.menuMusic.volume = 0
+                        audio.list.menuMusic.play()
+                        let menuMusicFadeIn = gsap.to(audio.list.menuMusic, 3, {volume: 0.3})
         
-                        /**
-                         * LAUNCH SCENE HERE
-                         */
-                    })
+                        // Launch menu three.js animation
+                        menu = new Menu(scene, camera, cameraControls, models, materials, menuIsActive)
+                        scene.add(menu.particlesGroup)
+                        menuIsActive = true
+    
+                        // Launch scene when user click on explore menu button
+                        this.$menuStartButton.addEventListener('click', () =>
+                        {
+                            // Define start animation timeline
+                            let startTimeline = new TimelineLite()
+    
+                            // Kill gsap that fade in the music then fade out the menu music
+                            menuMusicFadeIn.kill()
+                            startTimeline.to(audio.list.menuMusic, 1, {volume: 0})
+    
+                            // Make the menu disappear
+                            this.$menuStartButton.style.pointerEvents = 'none'
+                            startTimeline.to(this.$menuStartButton, 0.8, {opacity: 0}, '-=1')
+                            startTimeline.to(this.$menuTitle, 0.8, {opacity: 0}, '-=0.6')
+    
+                            // Play scene music
+                            audio.list.sceneMusic.loop = true
+                            audio.list.sceneMusic.volume = 0
+                            audio.list.sceneMusic.play()
+                            startTimeline.to(audio.list.sceneMusic, 2, {volume: 0.3})
+    
+                            // Move the camera on the scene
+                            startTimeline.to(camera.position, 1, {z: 10, ease: Power3.easeInOut},'-=2.5')
+                            
+                            // Move the menu light to become scene light
+                            startTimeline.to(menu.light.position, 1, {y: 1, z: 9, ease: Power3.easeInOut},'-=0.3')
+                            startTimeline.to(menu.light, 1, {intensity: 1.2, ease: Power1.easeInOut},'-=1.5')
+                            startTimeline.to(menu.light, 1, {distance: 30, ease: Power1.easeInOut},'-=1')
+    
+                            /**
+                             * LAUNCH SCENE HERE
+                             */
+    
+                            bloodParticlesSystem.setup()
+                            // document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
+            
+                            /**
+                             * LAUNCH SCENE HERE
+                             */
+                        })
+                    }
                 })
             }, 700)
         }
@@ -279,7 +288,7 @@ let launcher =
     // Actualize loading
     actualizeDomLoader()
     {
-        TweenLite.to(this.$loaderRedBg, 0.3, {y: -(this.numberOfLoadedFiles / this.numberOfFiles * 100) + 102})
+        gsap.to(this.$loaderRedBg, 0.3, {y: `${Math.round(-(this.numberOfLoadedFiles / this.numberOfFiles * 100) + 102)}%`})
     }
 }
 
@@ -567,8 +576,8 @@ let bloodParticlesSystem =
             if (this.previousDemo != null)
             {
                 let previousMesh = this.demoList[this.previousDemo]
-                TweenLite.to(previousMesh.position, 1, {z: 15})
-                TweenLite.to(previousMesh.position, 0, {z: - tube.length}).delay(1)
+                gsap.to(previousMesh.position, 1, {z: 15})
+                gsap.to(previousMesh.position, 0, {z: - tube.length}).delay(1)
             }
     
             // Add the mesh to the scene
