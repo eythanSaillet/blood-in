@@ -14,7 +14,7 @@ export default class RedCellTexts{
         const material = new THREE.MeshBasicMaterial({ color: 0xdddddd })
 
         const textGeometry = new THREE.TextGeometry(
-            'Une vie de globule',
+            'Sa couleur rouge',
             {
                 font : new THREE.Font(font),
                 size: 0.1,
@@ -29,7 +29,7 @@ export default class RedCellTexts{
         text.rotation.y = - Math.PI * 0.1
 
         const textGeometry2 = new THREE.TextGeometry(
-            'Les globules rouges sont des cellules particulieres, \ndepourvues de noyau. Elles sont produites dans \nla moelle osseuse par les cellules souches hematopoietiques \net vivent normalement 120 jours, avant d’etre detruites. ',
+            'Elle est due au fer contenu dans l\'hemoglobine, \nla proteine qui lui permet de fixer les molecules \nd’oxygene.',
             {
                 font : new THREE.Font(font),
                 size: 0.05,
@@ -50,7 +50,7 @@ export default class RedCellTexts{
         line2.rotation.y = Math.PI * 0.05
 
         const textGeometry3 = new THREE.TextGeometry(
-            'Elles ont une forme de disque biconcave, \nfacilement reconnaissable, et une couleur \nrouge due a la grande quantite d’hemoglobine \nqu’elles renferment.',
+            'Il a pour fonction de transporter l’oxygene jusqu’aux \norganes. Il est capable de se deformer grace a sa \nmembrane tres souple pour se faufiler dans les plus \npetits vaisseaux.',
             {
                 font : new THREE.Font(font),
                 size: 0.05,
@@ -67,7 +67,7 @@ export default class RedCellTexts{
         text3.rotation.y = Math.PI * 0.1
 
         const textGeometry4 = new THREE.TextGeometry(
-            'Un disque',
+            'Le globule rouge',
             {
                 font : new THREE.Font(font),
                 size: 0.1,

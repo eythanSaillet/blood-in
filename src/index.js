@@ -871,7 +871,6 @@ const loop = () =>
         const intersects = raycaster.intersectObjects(scene.children)
         for (let i = 0; i < intersects.length; i++)
         {
-            // scene.remove(intersects[i].object)
             for (const _particle of menu.particlesList)
             {
                 if(_particle.mesh == intersects[i].object)

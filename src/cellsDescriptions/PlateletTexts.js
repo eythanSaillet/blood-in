@@ -14,7 +14,7 @@ export default class PlateletTexts{
         const material = new THREE.MeshBasicMaterial({ color: 0xdddddd })
 
         const textGeometry = new THREE.TextGeometry(
-            'Une vie de globule',
+            'Ni trop, ni pas assez',
             {
                 font : new THREE.Font(font),
                 size: 0.1,
@@ -29,7 +29,7 @@ export default class PlateletTexts{
         text.rotation.y = - Math.PI * 0.1
 
         const textGeometry2 = new THREE.TextGeometry(
-            `Les plaquettes sont responsables \nde sa coagulation pour éviter \nson écoulement en cas \nde blessure d'un vaisseau sanguin.`,
+            `Trop de plaquettes augmente le risque \nde formation de caillot de sang, et pas \nassez augmentent de risque d'hemoragie.`,
             {
                 font : new THREE.Font(font),
                 size: 0.05,
@@ -50,7 +50,7 @@ export default class PlateletTexts{
         line2.rotation.y = Math.PI * 0.05
 
         const textGeometry3 = new THREE.TextGeometry(
-            'Il ne faut avoir ni trop, \nni pas assez de plaquettes. \nUn trop plein de plaquettes déclecnhe \nl’apparition de caillot de sang et \nun manque de plaquettes déclenche \ndes hémorragies internes.',
+            'Elles sont responsable de la coagulation \ndu sang, ce qui evite les trop gros \necoulement de sang en cas de blessures.',
             {
                 font : new THREE.Font(font),
                 size: 0.05,
@@ -67,7 +67,7 @@ export default class PlateletTexts{
         text3.rotation.y = Math.PI * 0.1
 
         const textGeometry4 = new THREE.TextGeometry(
-            'Un disque',
+            'Les plaquettes',
             {
                 font : new THREE.Font(font),
                 size: 0.1,

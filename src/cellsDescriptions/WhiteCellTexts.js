@@ -14,7 +14,7 @@ export default class WhiteCellTexts{
         const material = new THREE.MeshBasicMaterial({ color: 0xdddddd })
 
         const textGeometry = new THREE.TextGeometry(
-            'Une vie de globule',
+            'Une grande variete',
             {
                 font : new THREE.Font(font),
                 size: 0.1,
@@ -29,7 +29,7 @@ export default class WhiteCellTexts{
         text.rotation.y = - Math.PI * 0.1
 
         const textGeometry2 = new THREE.TextGeometry(
-            `Les lymphocytes sont des leucocytes \nqui ont un rôle majeur dans le \nsystème immunitaire. Elles sont responsables \nde l'immunité cellulaire : les cellules \nreconnues comme étrangères sont \ndétruites par un mécanisme complexe.`,
+            `Il en existe de plein de types differents, certains \nmangent l'enemie, d'autres le scannent afin de permettre \nau corps de creer des anticorps.`,
             {
                 font : new THREE.Font(font),
                 size: 0.05,
@@ -50,7 +50,7 @@ export default class WhiteCellTexts{
         line2.rotation.y = Math.PI * 0.05
 
         const textGeometry3 = new THREE.TextGeometry(
-            'Les granulocytes, autrefois qualifiés \nde polynucléaires, sont des globules \nblancs qualifiés de « non spécifiques » \ndans la mesure où ils ne sont \npas dirigés contre un seul antigène. \nIl existe différentes catégories de \ngranulocytes : les neutrophiles, \nles basophiles et les éosinophiles. ',
+            'Ceux sont les cellules immunitaires, leurs role est \nde defendre l\'organisme en cas d\'agression \npar un agent pathogene comme les virus, \nbacteries, parasites...',
             {
                 font : new THREE.Font(font),
                 size: 0.05,
@@ -67,7 +67,7 @@ export default class WhiteCellTexts{
         text3.rotation.y = Math.PI * 0.1
 
         const textGeometry4 = new THREE.TextGeometry(
-            'Un disque',
+            'Le globule blanc',
             {
                 font : new THREE.Font(font),
                 size: 0.1,
