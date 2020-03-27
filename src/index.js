@@ -3,8 +3,13 @@ import * as THREE from 'three'
 import { TweenMax, TimelineLite, Linear, Power3, Power1} from 'gsap'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import Menu from './Menu'
 import { gsap } from 'gsap'
+
+import Menu from './Menu'
+import RingsCells from './cellsDescriptions/RingsCells'
+import RedCellTexts from './cellsDescriptions/RedCellTexts'
+import WhiteCellTexts from './cellsDescriptions/WhiteCellTexts'
+import PlateletTexts from './cellsDescriptions/PlateletTexts'
 
 /**
  * Sizes
@@ -21,11 +26,11 @@ sizes.height = window.innerHeight
 const cursor = { x: 0, y: 0 }
 window.addEventListener('mousemove', (_event) =>
 {
+    // Update cursor values
     cursor.x = (_event.clientX / window.innerWidth) * 2 - 1
     cursor.y = ((_event.clientY / window.innerHeight) * 2 - 1) * - 1
     cursor.speedX = _event.movementX
     cursor.speedY = - _event.movementY
-    // console.log(_event)
 })
 
 /**
@@ -60,6 +65,7 @@ const pointLightHelper = new THREE.PointLightHelper(pointLight, 0.2)
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.01)
 scene.add(ambientLight)
 
+
 /**
  * 3D Models
  */
@@ -84,8 +90,6 @@ let models =
             'models/redCell.glb',
             (glb) =>
             {
-                console.log('success to load redCellGeometry')
-        
                 // Get the model and resize it
                 this.redCellGeometry = glb.scene.children[0].children[0].geometry
                 this.redCellGeometry.scale(0.25, 0.25, 0.25)
@@ -99,8 +103,6 @@ let models =
             'models/platelet/blood_platelet.gltf',
             (gltf) =>
             {
-                console.log('success to load plateletGeometry')
-        
                 // Get the model and resize it
                 this.plateletGeometry = gltf.scene.children[0].children[0].children[0].children[0].children[0].children[0].geometry
                 this.plateletGeometry.scale(0.0007, 0.0007, 0.0007)
@@ -114,8 +116,6 @@ let models =
             'models/whiteCell.glb',
             (glb) =>
             {
-                console.log('success to load white cell')
-        
                 // Get the model and resize it
                 this.whiteCellGeometry = glb.scene.children[0].children[0].geometry
                 this.whiteCellGeometry.scale(0.002, 0.002, 0.002)
@@ -125,6 +125,7 @@ let models =
         )
     },
 }
+
 
 /**
  * Audio
@@ -173,6 +174,7 @@ let audio =
     }
 }
 
+
 /**
  * Menu
  */
@@ -189,6 +191,8 @@ window.addEventListener('load', () =>
 {
     models.load()
     audio.load()
+    bloodParticlesSystem.setupCellsTexts()
+    window.focus()
 })
 
 let launcher =
@@ -235,7 +239,7 @@ let launcher =
                         let menuMusicFadeIn = gsap.to(audio.list.menuMusic, 3, {volume: 0.3})
         
                         // Launch menu three.js animation
-                        menu = new Menu(scene, camera, cameraControls, models, materials, menuIsActive)
+                        menu = new Menu(scene, camera, null, models, materials, menuIsActive)
                         scene.add(menu.particlesGroup)
                         menuIsActive = true
     
@@ -266,12 +270,13 @@ let launcher =
                             // Move the menu light to become scene light
                             startTimeline.to(menu.light.position, 1, {y: 1, z: 9, ease: Power3.easeInOut},'-=0.3')
                             startTimeline.to(menu.light, 1, {intensity: 1.2, ease: Power1.easeInOut},'-=1.5')
-                            startTimeline.to(menu.light, 1, {distance: 30, ease: Power1.easeInOut},'-=1')
+                            startTimeline.to(menu.light, 1, {distance: 30, ease: Power1.easeInOut, onComplete: () => sceneInterface.setup()},'-=1')
     
                             /**
                              * LAUNCH SCENE HERE
                              */
     
+                            // Setup blood particles system
                             bloodParticlesSystem.setup()
                             // document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
             
@@ -341,7 +346,7 @@ let tube = {
     build()
     {
         // Create an empty array to stores the points
-        const points = [];
+        const points = []
         
         // Define points along Z axis
         for (let i = 0; i < this.length; i++ )
@@ -387,9 +392,9 @@ renderer.render(scene, camera)
  * Camera Controls
  */
 
-const cameraControls = new OrbitControls(camera, renderer.domElement)
-cameraControls.zoomSpeed = 0.3
-cameraControls.enableDamping = true
+// const cameraControls = new OrbitControls(camera, renderer.domElement)
+// cameraControls.zoomSpeed = 0.3
+// cameraControls.enableDamping = true
 
 
 /**
@@ -452,7 +457,6 @@ class BloodParticle
         // Muliply by speed & rotation speed factor of the system to influence behaviour of all particles
         this.speed = this.referenceSpeed * bloodParticlesSystem.speedFactor
         this.rotationSpeed = this.referenceRotationSpeed * bloodParticlesSystem.rotationSpeedFactor
-
     }
 }
 
@@ -480,7 +484,16 @@ let bloodParticlesSystem =
     previousDemo: null,
     actualDemo: 0,
     demoList: [],
-    heartBeatRate: 800,
+    heartBeatRate: 1000,
+    heartBeatRateFactor: 1,
+
+    // Cells descriptions
+    descriptionRings: null,
+    descriptionParallaxFactor: 0.35,
+    redCellTexts: null,
+    whiteCellTexts: null,
+    plateletTexts: null,
+    cellsTextsList: [],
 
     setup()
     {
@@ -493,13 +506,13 @@ let bloodParticlesSystem =
         // Adding the particle to the scene
         scene.add(this.group)
 
-        // Setup the list of particles we want in the demonstrations
+        // Setup the list of particles we want in the demonstrations and there texts
         this.setupListOfDemo()
-        // Temporary event to lauch demo
-        document.querySelector('.anim').addEventListener('click', () => this.goToDemo())
+        // Setup mouse parallax on cells descriptions
+        this.setupDescriptionParallax()
 
         // Set heartbeat : audio and light
-        // this.setHeartBeat()
+        this.setHeartBeat()
     },
 
     setupListOfDemo()
@@ -507,8 +520,11 @@ let bloodParticlesSystem =
         // Define list of mesh particles we want to present in the demonstrations
         this.demoList =
         [
-            new THREE.Mesh(models.redCellGeometry, materials.normalMaterial)
+            new THREE.Mesh(models.redCellGeometry, materials.redCellMaterial),
+            new THREE.Mesh(models.whiteCellGeometry, materials.whiteCellMaterial),
+            new THREE.Mesh(models.plateletGeometry, materials.plateletMaterial),
         ]
+        this.demoList[2].scale.set(1.8, 1.8, 1.8)
     },
 
     setupListOfType()
@@ -565,50 +581,261 @@ let bloodParticlesSystem =
         }
     },
 
+    setupCellsTexts()
+    {
+        // Setup cells rings
+        this.descriptionRings = new RingsCells()
+
+        // Setup red cells description
+        this.redCellTexts = new RedCellTexts()
+        this.cellsTextsList.push(this.redCellTexts)
+
+        // Setup white cells description
+        this.whiteCellTexts = new WhiteCellTexts()
+        this.cellsTextsList.push(this.whiteCellTexts)
+
+        // Setup platelet description
+        this.plateletTexts = new PlateletTexts()
+        this.cellsTextsList.push(this.plateletTexts)
+    },
+
+    setupCellDescriptionState()
+    {
+        // Setup cells rings
+        this.descriptionRings.group.position.set(0, 0.05, 9.2)
+        this.descriptionRings.group.scale.set(0.3, 0.3, 0.3)
+
+        // Setup cell description
+        this.cellsTextsList[this.actualDemo].group.position.set(0.13, 0.05, 9.2)
+        this.cellsTextsList[this.actualDemo].group.scale.set(0.3, 0.3, 0.3)
+    },
+
+    setupDescriptionParallax()
+    {
+        // On mousemove, translate descriptions groups to make a parallax effect
+        window.addEventListener('mousemove', (_event) =>
+        {
+            // Calculate
+            let x = (_event.clientX / window.innerWidth - 0.5) * this.descriptionParallaxFactor
+            let y = (_event.clientY / window.innerHeight - 0.5) * this.descriptionParallaxFactor
+
+            // Apply on rings
+            this.descriptionRings.group.rotation.y = x
+            this.descriptionRings.group.rotation.x = y
+
+            // Apply on redCell description
+            this.redCellTexts.group.rotation.y = x
+            this.redCellTexts.group.rotation.x = y
+
+
+            // Apply on whiteCell description
+            this.whiteCellTexts.group.rotation.y = x
+            this.whiteCellTexts.group.rotation.x = y
+
+            // this.demoList[1].rotation.y = x
+            // this.demoList[1].rotation.x = y
+
+            // Apply on platelet description
+            this.plateletTexts.group.rotation.y = x
+            this.plateletTexts.group.rotation.x = y
+        })
+    },
+
+    makeAppearCellDescription()
+    {
+        // Play tweens for fade in rings animation
+        gsap.from(this.descriptionRings.group.children[0].scale, 0.7, {x: 0, y: 0, z: 0})
+        gsap.from(this.descriptionRings.group.children[1].scale, 0.7, {x: 0, y: 0, z: 0})
+
+        // Then add rings group to the scene
+        scene.add(this.descriptionRings.group)
+
+        // Define text from the text list
+        let texts = this.cellsTextsList[this.actualDemo]
+
+        // Play tweens for fade in text animation
+        // Lines
+        gsap.from(texts.group.children[0].scale, 1, {x: 0, y: 0, z: 0})
+        gsap.from(texts.group.children[1].scale, 1, {x: 0, y: 0, z: 0})
+        // Titles
+        gsap.from(texts.group.children[2].position, 1.5, {x: 7})
+        gsap.from(texts.group.children[3].position, 1.5, {x: -7})
+        // Texts
+        gsap.from(texts.group.children[4].position, 1.5, {x: 7})
+        gsap.from(texts.group.children[5].position, 1.5, { x: -7})
+
+        // setTimeout(() =>
+        // {
+        //     bloodParticlesSystem.inAnimation = true
+        // }, 3000)
+
+        // Then add text group to the scene
+        scene.add(texts.group)
+    },
+
+    makeDisappearCellDescription()
+    {
+        // Translate groups behind the camera
+        gsap.to(this.cellsTextsList[this.previousDemo].group.position, 2, {z: 15})
+        gsap.to(this.descriptionRings.group.position, 2, {z: 15})
+
+        // Remove them of the scene
+        scene.remove(this.cellsTextsList[this.previousDemo].group)
+        scene.remove(this.descriptionRings.group.position)
+    },
+
     goToDemo()
     {
-        // If the animation is not playing and if the next demo is different from the actual demo then play
-        if (!this.inAnimation && this.previousDemo != this.actualDemo)
+        // Restore pos of the previous mesh
+        if (this.previousDemo != null)
         {
-            this.inAnimation = true
-
-            // Restore pos of the previous mesh
-            if (this.previousDemo != null)
-            {
-                let previousMesh = this.demoList[this.previousDemo]
-                gsap.to(previousMesh.position, 1, {z: 15})
-                gsap.to(previousMesh.position, 0, {z: - tube.length}).delay(1)
-            }
-    
-            // Add the mesh to the scene
-            let mesh = this.demoList[this.actualDemo]
-            mesh.position.z = - tube.length
-            mesh.rotation.x = Math.PI * 0.15
-            mesh.rotation.z = Math.PI * 0.1
-            scene.add(mesh)
-    
-            // Play the animation
-            let timeline = new TimelineLite({defaultEase: Power1.easeOut})
-            timeline.to(bloodParticlesSystem, 2, {speedFactor: 10})
-                    .to(menu.light.position, 2, {z: 20}, '-=2')
-                    .to(mesh.position, 3, {z: 8.7, ease: Power3.easeOut}, '-=1')
-                    .to(menu.light.position, 1, {z: 11}, '-=0.5')
-                    .to(bloodParticlesSystem, 2.5, {speedFactor: 0.04}, '-=2.7')
-                    .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.inAnimation = false ; this.previousDemo = this.actualDemo}}, '-=2')
+            let previousMesh = this.demoList[this.previousDemo]
+            gsap.to(previousMesh.position, 1, {z: 15, onComplete: () => {scene.remove(previousMesh) ; previousMesh.position.z = - tube.length}})
         }
+        
+        // Add the mesh to the scene
+        let mesh = this.demoList[this.actualDemo]
+        mesh.position.z = - tube.length
+        mesh.rotation.x = Math.PI * 0.15
+        mesh.rotation.z = Math.PI * 0.1
+        scene.add(mesh)
+
+        // Play the animation
+        let timeline = new TimelineLite({defaultEase: Power1.easeOut})
+        timeline.to(bloodParticlesSystem, 3, {speedFactor: 9})
+                .to(audio.list.sceneMusic, 1, {volume: 0.2}, '-=1')
+                .to(bloodParticlesSystem, 1, {heartBeatRateFactor: 1.8}, '-=4')
+                .to(menu.light.position, 2, {z: 20}, '-=3')
+                .to(mesh.position, 3, {z: 8.7, ease: Power3.easeOut}, '-=1')
+                .to(menu.light.position, 1, {z: 11}, '-=0.5')
+                .to(bloodParticlesSystem, 2.5, {speedFactor: 0.04}, '-=2.7')
+                .to(bloodParticlesSystem, 1, {heartBeatRateFactor: 0.5}, '-=2.5')
+                .to(audio.list.sceneMusic, 1, {volume: 0.05}, '-=1.7')
+                .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.previousDemo = this.actualDemo ; this.setupCellDescriptionState() ; this.makeAppearCellDescription() ; setTimeout(() => {this.inAnimation = false}, 500) }}, '-=2')
+    },
+
+    nextDemo()
+    {
+        // Make disappear previous cell description
+        this.makeDisappearCellDescription()
+
+        // Update actualDemo indicator
+        this.actualDemo++
+        this.actualDemo == this.demoList.length ? this.actualDemo = 0 : null
+        this.goToDemo()
+    },
+
+    resetNaturalFlow()
+    {
+        // Reset previous mesh pos
+        let previousMesh = this.demoList[this.previousDemo]
+        gsap.to(previousMesh.position, 1, {z: 15, onComplete: () => {scene.remove(previousMesh) ; previousMesh.position.z = - tube.length}})
+
+        // Reset blood animation properties
+        gsap.to(bloodParticlesSystem, 2, {speedFactor: 1})
+        gsap.to(audio.list.sceneMusic, 2, {volume: 0.25})
+        gsap.to(bloodParticlesSystem, 2, {heartBeatRateFactor: 1})
+        gsap.to(bloodParticlesSystem, 2, {rotationSpeedFactor: 1, onComplete: () => {this.inAnimation = false}})
     },
 
     setHeartBeat()
     {
+        // Set volume of the heartbeat sound
+        audio.list['heartBeat'].volume = 0.6
+
         // Loop that play heartbeat sound according to the heartbeat rate
         setTimeout(() =>
         {
             audio.list['heartBeat'].pause()
-            audio.list['heartBeat'].currentTime = 0.1
+            audio.list['heartBeat'].playbackRate = this.heartBeatRateFactor * 0.8
+            audio.list['heartBeat'].currentTime = 0
             audio.list['heartBeat'].play()
             this.setHeartBeat()
-        }, this.heartBeatRate)
+        }, this.heartBeatRate / this.heartBeatRateFactor)
     }
+}
+
+let sceneInterface =
+{
+    $sceneInterface: document.querySelector('.sceneInterface'),
+    $squareButton: document.querySelector('.sceneInterface .squareButton'),
+    $circleButtons: document.querySelectorAll('.sceneInterface .circleButton'),
+
+    setup()
+    {
+        this.$sceneInterface.style.display = 'flex'
+        gsap.to(this.$squareButton, 0.7, {opacity: 1})
+        setTimeout(() =>
+        {
+            for (let i = 0; i < this.$circleButtons.length; i++)
+            {
+                gsap.to(this.$circleButtons[i], 0.7, {opacity: 1}).delay(i / 1.5)
+            }
+        }, 500)
+
+        this.setButtonsEvent()
+    },
+
+    setButtonsEvent()
+    {
+        this.$squareButton.addEventListener('click', () =>
+        {
+            // Test if and if we arent already in animation
+            if (!bloodParticlesSystem.inAnimation && bloodParticlesSystem.previousDemo != null)
+            {
+                bloodParticlesSystem.inAnimation = true
+                
+                // Come back to normal blood
+                bloodParticlesSystem.resetNaturalFlow()
+
+                // Make disappear previous text then reset previous demo indicator
+                bloodParticlesSystem.makeDisappearCellDescription()
+                bloodParticlesSystem.previousDemo = null
+    
+                // Actualize visual selection
+                gsap.to(this.$squareButton, 0.5, {background: 'rgba(255, 255, 255, 1)'})
+                for (const _button of this.$circleButtons)
+                {
+                    gsap.to(_button, 0.5, {background: 'rgba(255, 255, 255, 0)'})
+                }
+            }
+
+        })
+        for (const _button of this.$circleButtons)
+        {
+            _button.addEventListener('click', () =>
+            {
+                // Test if and if we arent already in animation
+                if (!bloodParticlesSystem.inAnimation)
+                {
+                    // Set actual demo indicator
+                    bloodParticlesSystem.actualDemo = parseInt(_button.getAttribute('value'))
+    
+                    // Test if previous demo is different from actual
+                    if (bloodParticlesSystem.previousDemo != bloodParticlesSystem.actualDemo)
+                    {
+                        // Actualize visual selection
+                        gsap.to(this.$squareButton, 0.5, {background: 'rgba(255, 255, 255, 0)'})
+                        gsap.to(_button, 0.5, {background: 'rgba(255, 255, 255, 1)'})
+                        
+                        // Declare that we are in the animation to prevent mulitple launch
+                        bloodParticlesSystem.inAnimation = true
+                        
+                        if (bloodParticlesSystem.previousDemo != null)
+                        {
+                            // Actualize visual selection of previous button
+                            gsap.to(this.$circleButtons[bloodParticlesSystem.previousDemo], 0.5, {background: 'rgba(255, 255, 255, 0)'})
+                            // Make disappear previous cell description
+                            bloodParticlesSystem.makeDisappearCellDescription()
+                        }
+        
+                        // Launch demo
+                        bloodParticlesSystem.goToDemo()
+                    }
+                }
+            })
+        }
+    },
 }
 
 // Raycaster
@@ -624,7 +851,7 @@ const loop = () =>
     window.requestAnimationFrame(loop)
     
     // CAMERA
-    cameraControls.update()
+    // cameraControls.update()
 
     // Update scene particles states
     for (const _particle of bloodParticlesSystem.list)
@@ -644,7 +871,6 @@ const loop = () =>
         const intersects = raycaster.intersectObjects(scene.children)
         for (let i = 0; i < intersects.length; i++)
         {
-            // scene.remove(intersects[i].object)
             for (const _particle of menu.particlesList)
             {
                 if(_particle.mesh == intersects[i].object)
@@ -655,8 +881,6 @@ const loop = () =>
             }
         }
     }
-
-
 
     // Render
     renderer.render(scene, camera)

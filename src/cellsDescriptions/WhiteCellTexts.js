@@ -5,21 +5,20 @@ export default class WhiteCellTexts{
     constructor(){
         this.group = new THREE.Group()
 
-        const lineGeometry = new THREE.PlaneGeometry(0.015, 0.5)
+        const lineGeometry = new THREE.PlaneGeometry(0.005, 0.5)
         const lineMaterial = new THREE.MeshBasicMaterial( 0xff0000 )
         const line = new THREE.Mesh(lineGeometry, lineMaterial)
         line.position.set(0.1, 0.12, 0)
         line.rotation.z = - Math.PI * 0.35
-        this.group.add(line)
 
         const material = new THREE.MeshBasicMaterial({ color: 0xdddddd })
 
         const textGeometry = new THREE.TextGeometry(
-            'Une vie de globule',
+            'Une grande variete',
             {
                 font : new THREE.Font(font),
                 size: 0.1,
-                height: 0.03,
+                height: 0.005,
                 curveSegments: 12,
                 bevelEnabled: false
             }
@@ -28,14 +27,13 @@ export default class WhiteCellTexts{
         text.position.y = 0.3
         text.position.x = 0.35
         text.rotation.y = - Math.PI * 0.1
-        this.group.add(text)
 
         const textGeometry2 = new THREE.TextGeometry(
-            `Les lymphocytes sont des leucocytes \nqui ont un rôle majeur dans le \nsystème immunitaire. Elles sont responsables \nde l'immunité cellulaire : les cellules \nreconnues comme étrangères sont \ndétruites par un mécanisme complexe.`,
+            `Il en existe de plein de types differents, certains \nmangent l'enemie, d'autres le scannent afin de permettre \nau corps de creer des anticorps.`,
             {
                 font : new THREE.Font(font),
                 size: 0.05,
-                height: 0.015,
+                height: 0.005,
                 curveSegments: 12,
                 bevelEnabled: false
             }
@@ -45,20 +43,18 @@ export default class WhiteCellTexts{
         text2.position.x = 0.35
         text2.position.y = 0.1
         text2.rotation.y = - Math.PI * 0.1
-        this.group.add(text2)
 
         const line2 = new THREE.Mesh(lineGeometry, lineMaterial)
         line2.position.set(- 1.05, - 0.3, 0.18)
         line2.rotation.z = Math.PI * 0.35
         line2.rotation.y = Math.PI * 0.05
-        this.group.add(line2)
 
         const textGeometry3 = new THREE.TextGeometry(
-            'Les granulocytes, autrefois qualifiés \nde polynucléaires, sont des globules \nblancs qualifiés de « non spécifiques » \ndans la mesure où ils ne sont \npas dirigés contre un seul antigène. \nIl existe différentes catégories de \ngranulocytes : les neutrophiles, \nles basophiles et les éosinophiles. ',
+            'Ceux sont les cellules immunitaires, leurs role est \nde defendre l\'organisme en cas d\'agression \npar un agent pathogene comme les virus, \nbacteries, parasites...',
             {
                 font : new THREE.Font(font),
                 size: 0.05,
-                height: 0.015,
+                height: 0.005,
                 curveSegments: 12,
                 bevelEnabled: false
             }
@@ -69,14 +65,13 @@ export default class WhiteCellTexts{
         text3.position.z = 0.6
         text3.position.y = 0.1
         text3.rotation.y = Math.PI * 0.1
-        this.group.add(text3)
 
         const textGeometry4 = new THREE.TextGeometry(
-            'Un disque',
+            'Le globule blanc',
             {
                 font : new THREE.Font(font),
                 size: 0.1,
-                height: 0.03,
+                height: 0.005,
                 curveSegments: 12,
                 bevelEnabled: false
             }
@@ -85,6 +80,16 @@ export default class WhiteCellTexts{
         const text4 = new THREE.Mesh(textGeometry4, material)
         text4.position.set(-2.5, 0.3, 0.6)
         text4.rotation.y = Math.PI * 0.1
+
+        // Adding to the groups
+        // Lines
+        this.group.add(line)
+        this.group.add(line2)
+        // Titles
+        this.group.add(text)
         this.group.add(text4)
+        // Texts
+        this.group.add(text2)
+        this.group.add(text3)
     }
 }

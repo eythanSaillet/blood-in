@@ -118,7 +118,6 @@ export default class Menu
 
         // Set camera view
         camera.position.z = this.depthPos
-        camera.rotation.x = Math.PI / 2
 
         // Light
         this.light = new THREE.PointLight(0xff9999, 3, 5)
