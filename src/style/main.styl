@@ -18,11 +18,40 @@ body
         width 100%
         height 100%
         z-index -5
-    .buttonContainer
+    .sceneInterface
         position absolute
         top 0
         left 0
-        z-index 10
+        width 100vw
+        height 100vh
+        display none
+        align-items flex-end
+        justify-content center
+        z-index 5
+        pointer-events none
+        .buttonsContainer
+            width 500px
+            display flex
+            align-items flex-end
+            justify-content space-around
+            margin-bottom 10vh
+            div
+                width 30px
+                height 30px
+                border solid white 1px
+                opacity 0
+                pointer-events auto
+                cursor pointer
+            .squareButton
+                background white
+            .circleButton
+                border-radius 50%
+
+    // .buttonContainer
+    //     position absolute
+    //     top 0
+    //     left 0
+    //     z-index 10
     .loaderOverlay
         position absolute
         top 0

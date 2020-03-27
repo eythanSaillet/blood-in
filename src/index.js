@@ -276,7 +276,7 @@ let launcher =
                             // Move the menu light to become scene light
                             startTimeline.to(menu.light.position, 1, {y: 1, z: 9, ease: Power3.easeInOut},'-=0.3')
                             startTimeline.to(menu.light, 1, {intensity: 1.2, ease: Power1.easeInOut},'-=1.5')
-                            startTimeline.to(menu.light, 1, {distance: 30, ease: Power1.easeInOut},'-=1')
+                            startTimeline.to(menu.light, 1, {distance: 30, ease: Power1.easeInOut, onComplete: () => sceneInterface.setup()},'-=1')
     
                             /**
                              * LAUNCH SCENE HERE
@@ -516,10 +516,7 @@ let bloodParticlesSystem =
         this.setupListOfDemo()
         // Setup mouse parallax on cells descriptions
         this.setupDescriptionParallax()
-        // Temporary event to lauch demo
-        document.querySelector('.anim').addEventListener('click', () => this.goToDemo())
-        document.querySelector('.nextDemo').addEventListener('click', () => this.nextDemo())
-
+        
         // Set heartbeat : audio and light
         this.setHeartBeat()
     },
@@ -667,11 +664,16 @@ let bloodParticlesSystem =
         gsap.from(texts.group.children[0].scale, 1, {x: 0, y: 0, z: 0})
         gsap.from(texts.group.children[1].scale, 1, {x: 0, y: 0, z: 0})
         // Titles
-        gsap.from(texts.group.children[2].position, 1.5, {x: 5})
-        gsap.from(texts.group.children[3].position, 1.5, {x: -5})
+        gsap.from(texts.group.children[2].position, 1.5, {x: 7})
+        gsap.from(texts.group.children[3].position, 1.5, {x: -7})
         // Texts
-        gsap.from(texts.group.children[4].position, 1.5, {x: 5})
-        gsap.from(texts.group.children[5].position, 1.5, {x: -5, onComplete: () => {this.inAnimation = false}})
+        gsap.from(texts.group.children[4].position, 1.5, {x: 7})
+        gsap.from(texts.group.children[5].position, 1.5, { x: -7})
+
+        // setTimeout(() =>
+        // {
+        //     bloodParticlesSystem.inAnimation = true
+        // }, 3000)
 
         // Then add text group to the scene
         scene.add(texts.group)
@@ -679,52 +681,45 @@ let bloodParticlesSystem =
 
     makeDisappearCellDescription()
     {
+        console.log(this.previousDemo)
         // Translate groups behind the camera
-        gsap.to(this.cellsTextsList[this.actualDemo].group.position, 2, {z: 15})
+        gsap.to(this.cellsTextsList[this.previousDemo].group.position, 2, {z: 15})
         gsap.to(this.descriptionRings.group.position, 2, {z: 15})
 
         // Remove them of the scene
-        scene.remove(this.cellsTextsList[this.actualDemo].group)
+        scene.remove(this.cellsTextsList[this.previousDemo].group)
         scene.remove(this.descriptionRings.group.position)
     },
 
     goToDemo()
     {
-        // If the animation is not playing and if the next demo is different from the actual demo then play
-        if (!this.inAnimation && this.previousDemo != this.actualDemo)
+        // Restore pos of the previous mesh
+        if (this.previousDemo != null)
         {
-            this.inAnimation = true
-
-            // Restore pos of the previous mesh
-            if (this.previousDemo != null)
-            {
-                let previousMesh = this.demoList[this.previousDemo]
-                gsap.to(previousMesh.position, 1, {z: 15, onComplete: () => {scene.remove(previousMesh) ; previousMesh.position.z = - tube.length}})
-                // console.log(previousMesh.position)
-                // gsap.to(previousMesh.position, 0, {z: - tube.length}).delay(1.5)
-            }
-            
-            // Add the mesh to the scene
-            let mesh = this.demoList[this.actualDemo]
-            mesh.position.z = - tube.length
-            mesh.rotation.x = Math.PI * 0.15
-            mesh.rotation.z = Math.PI * 0.1
-            scene.add(mesh)
-    
-            // Play the animation
-            let timeline = new TimelineLite({defaultEase: Power1.easeOut})
-            console.log(audio.list.sceneMusic.volume)
-            timeline.to(bloodParticlesSystem, 3, {speedFactor: 9})
-                    .to(audio.list.sceneMusic, 1, {volume: 0.3}, '-=1')
-                    .to(bloodParticlesSystem, 1, {heartBeatRateFactor: 1.8}, '-=4')
-                    .to(menu.light.position, 2, {z: 20}, '-=3')
-                    .to(mesh.position, 3, {z: 8.7, ease: Power3.easeOut}, '-=1')
-                    .to(menu.light.position, 1, {z: 11}, '-=0.5')
-                    .to(bloodParticlesSystem, 2.5, {speedFactor: 0.04}, '-=2.7')
-                    .to(bloodParticlesSystem, 1, {heartBeatRateFactor: 0.5}, '-=2.5')
-                    .to(audio.list.sceneMusic, 1, {volume: 0.05}, '-=1.7')
-                    .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.previousDemo = this.actualDemo ; this.setupCellDescriptionState() ; this.makeAppearCellDescription()}}, '-=2')
+            let previousMesh = this.demoList[this.previousDemo]
+            gsap.to(previousMesh.position, 1, {z: 15, onComplete: () => {scene.remove(previousMesh) ; previousMesh.position.z = - tube.length}})
+            // gsap.to(previousMesh.position, 0, {z: - tube.length}).delay(1.5)
         }
+        
+        // Add the mesh to the scene
+        let mesh = this.demoList[this.actualDemo]
+        mesh.position.z = - tube.length
+        mesh.rotation.x = Math.PI * 0.15
+        mesh.rotation.z = Math.PI * 0.1
+        scene.add(mesh)
+
+        // Play the animation
+        let timeline = new TimelineLite({defaultEase: Power1.easeOut})
+        timeline.to(bloodParticlesSystem, 3, {speedFactor: 9})
+                .to(audio.list.sceneMusic, 1, {volume: 0.3}, '-=1')
+                .to(bloodParticlesSystem, 1, {heartBeatRateFactor: 1.8}, '-=4')
+                .to(menu.light.position, 2, {z: 20}, '-=3')
+                .to(mesh.position, 3, {z: 8.7, ease: Power3.easeOut}, '-=1')
+                .to(menu.light.position, 1, {z: 11}, '-=0.5')
+                .to(bloodParticlesSystem, 2.5, {speedFactor: 0.04}, '-=2.7')
+                .to(bloodParticlesSystem, 1, {heartBeatRateFactor: 0.5}, '-=2.5')
+                .to(audio.list.sceneMusic, 1, {volume: 0.05}, '-=1.7')
+                .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.previousDemo = this.actualDemo ; this.setupCellDescriptionState() ; this.makeAppearCellDescription() ; this.inAnimation = false }}, '-=2')
     },
 
     nextDemo()
@@ -740,7 +735,9 @@ let bloodParticlesSystem =
 
     setHeartBeat()
     {
+        // Set volume of the heartbeat sound
         audio.list['heartBeat'].volume = 0.6
+
         // Loop that play heartbeat sound according to the heartbeat rate
         setTimeout(() =>
         {
@@ -751,6 +748,75 @@ let bloodParticlesSystem =
             this.setHeartBeat()
         }, this.heartBeatRate / this.heartBeatRateFactor)
     }
+}
+
+let sceneInterface =
+{
+    $sceneInterface: document.querySelector('.sceneInterface'),
+    $squareButton: document.querySelector('.sceneInterface .squareButton'),
+    $circleButtons: document.querySelectorAll('.sceneInterface .circleButton'),
+
+    setup()
+    {
+        this.$sceneInterface.style.display = 'flex'
+        gsap.to(this.$squareButton, 0.7, {opacity: 1})
+        setTimeout(() =>
+        {
+            for (let i = 0; i < this.$circleButtons.length; i++)
+            {
+                gsap.to(this.$circleButtons[i], 0.7, {opacity: 1}).delay(i / 1.5)
+            }
+        }, 500)
+
+        this.setButtonsEvent()
+    },
+
+    setButtonsEvent()
+    {
+        this.$squareButton.addEventListener('click', () =>
+        {
+            // COME BACK TO NORMAL BLOOD
+
+            // Actualize visual selection
+            gsap.to(this.$squareButton, 0.5, {background: 'rgba(255, 255, 255, 1)'})
+            for (const _button of this.$circleButtons)
+            {
+                gsap.to(_button, 0.5, {background: 'rgba(255, 255, 255, 0)'})
+            }
+
+        })
+        for (const _button of this.$circleButtons)
+        {
+            _button.addEventListener('click', () =>
+            {
+                // Set actual demo indicator
+                bloodParticlesSystem.actualDemo = parseInt(_button.getAttribute('value'))
+
+                // Test if previous demo is different from actual and if we arent in animation
+                if (!bloodParticlesSystem.inAnimation && bloodParticlesSystem.previousDemo != bloodParticlesSystem.actualDemo)
+                {
+                    // Actualize visual selection
+                    console.log('rgba(255, 255, 255, 0)')
+                    gsap.to(this.$squareButton, 0.5, {background: 'rgba(255, 255, 255, 0)'})
+                    gsap.to(_button, 0.5, {background: 'rgba(255, 255, 255, 1)'})
+                    
+                    // Declare that we are in the animation to prevent mulitple launch
+                    bloodParticlesSystem.inAnimation = true
+                    
+                    if (bloodParticlesSystem.previousDemo != null)
+                    {
+                        // Actualize visual selection of previous button
+                        gsap.to(this.$circleButtons[bloodParticlesSystem.previousDemo], 0.5, {background: 'rgba(255, 255, 255, 0)'})
+                        // Make disappear previous cell description
+                        bloodParticlesSystem.makeDisappearCellDescription()
+                    }
+    
+                    // Launch demo
+                    bloodParticlesSystem.goToDemo()
+                }
+            })
+        }
+    },
 }
 
 // Raycaster
@@ -797,8 +863,6 @@ const loop = () =>
             }
         }
     }
-
-
 
     // Render
     renderer.render(scene, camera)
