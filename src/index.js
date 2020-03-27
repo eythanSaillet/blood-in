@@ -90,8 +90,6 @@ let models =
             'models/redCell.glb',
             (glb) =>
             {
-                console.log('success to load redCellGeometry')
-        
                 // Get the model and resize it
                 this.redCellGeometry = glb.scene.children[0].children[0].geometry
                 this.redCellGeometry.scale(0.25, 0.25, 0.25)
@@ -105,8 +103,6 @@ let models =
             'models/platelet/blood_platelet.gltf',
             (gltf) =>
             {
-                console.log('success to load plateletGeometry')
-        
                 // Get the model and resize it
                 this.plateletGeometry = gltf.scene.children[0].children[0].children[0].children[0].children[0].children[0].geometry
                 this.plateletGeometry.scale(0.0007, 0.0007, 0.0007)
@@ -120,8 +116,6 @@ let models =
             'models/whiteCell.glb',
             (glb) =>
             {
-                console.log('success to load white cell')
-        
                 // Get the model and resize it
                 this.whiteCellGeometry = glb.scene.children[0].children[0].geometry
                 this.whiteCellGeometry.scale(0.002, 0.002, 0.002)
@@ -516,7 +510,7 @@ let bloodParticlesSystem =
         this.setupListOfDemo()
         // Setup mouse parallax on cells descriptions
         this.setupDescriptionParallax()
-        
+
         // Set heartbeat : audio and light
         this.setHeartBeat()
     },
@@ -681,7 +675,6 @@ let bloodParticlesSystem =
 
     makeDisappearCellDescription()
     {
-        console.log(this.previousDemo)
         // Translate groups behind the camera
         gsap.to(this.cellsTextsList[this.previousDemo].group.position, 2, {z: 15})
         gsap.to(this.descriptionRings.group.position, 2, {z: 15})
@@ -698,7 +691,6 @@ let bloodParticlesSystem =
         {
             let previousMesh = this.demoList[this.previousDemo]
             gsap.to(previousMesh.position, 1, {z: 15, onComplete: () => {scene.remove(previousMesh) ; previousMesh.position.z = - tube.length}})
-            // gsap.to(previousMesh.position, 0, {z: - tube.length}).delay(1.5)
         }
         
         // Add the mesh to the scene
@@ -711,7 +703,7 @@ let bloodParticlesSystem =
         // Play the animation
         let timeline = new TimelineLite({defaultEase: Power1.easeOut})
         timeline.to(bloodParticlesSystem, 3, {speedFactor: 9})
-                .to(audio.list.sceneMusic, 1, {volume: 0.3}, '-=1')
+                .to(audio.list.sceneMusic, 1, {volume: 0.2}, '-=1')
                 .to(bloodParticlesSystem, 1, {heartBeatRateFactor: 1.8}, '-=4')
                 .to(menu.light.position, 2, {z: 20}, '-=3')
                 .to(mesh.position, 3, {z: 8.7, ease: Power3.easeOut}, '-=1')
@@ -719,7 +711,7 @@ let bloodParticlesSystem =
                 .to(bloodParticlesSystem, 2.5, {speedFactor: 0.04}, '-=2.7')
                 .to(bloodParticlesSystem, 1, {heartBeatRateFactor: 0.5}, '-=2.5')
                 .to(audio.list.sceneMusic, 1, {volume: 0.05}, '-=1.7')
-                .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.previousDemo = this.actualDemo ; this.setupCellDescriptionState() ; this.makeAppearCellDescription() ; this.inAnimation = false }}, '-=2')
+                .to(bloodParticlesSystem, 2, {rotationSpeedFactor: 0.08, onComplete: () => {this.previousDemo = this.actualDemo ; this.setupCellDescriptionState() ; this.makeAppearCellDescription() ; setTimeout(() => {this.inAnimation = false}, 500) }}, '-=2')
     },
 
     nextDemo()
@@ -731,6 +723,19 @@ let bloodParticlesSystem =
         this.actualDemo++
         this.actualDemo == this.demoList.length ? this.actualDemo = 0 : null
         this.goToDemo()
+    },
+
+    resetNaturalFlow()
+    {
+        // Reset previous mesh pos
+        let previousMesh = this.demoList[this.previousDemo]
+        gsap.to(previousMesh.position, 1, {z: 15, onComplete: () => {scene.remove(previousMesh) ; previousMesh.position.z = - tube.length}})
+
+        // Reset blood animation properties
+        gsap.to(bloodParticlesSystem, 2, {speedFactor: 1})
+        gsap.to(audio.list.sceneMusic, 2, {volume: 0.25})
+        gsap.to(bloodParticlesSystem, 2, {heartBeatRateFactor: 1})
+        gsap.to(bloodParticlesSystem, 2, {rotationSpeedFactor: 1, onComplete: () => {this.inAnimation = false}})
     },
 
     setHeartBeat()
@@ -775,13 +780,24 @@ let sceneInterface =
     {
         this.$squareButton.addEventListener('click', () =>
         {
-            // COME BACK TO NORMAL BLOOD
-
-            // Actualize visual selection
-            gsap.to(this.$squareButton, 0.5, {background: 'rgba(255, 255, 255, 1)'})
-            for (const _button of this.$circleButtons)
+            // Test if and if we arent already in animation
+            if (!bloodParticlesSystem.inAnimation && bloodParticlesSystem.previousDemo != null)
             {
-                gsap.to(_button, 0.5, {background: 'rgba(255, 255, 255, 0)'})
+                bloodParticlesSystem.inAnimation = true
+                
+                // Come back to normal blood
+                bloodParticlesSystem.resetNaturalFlow()
+
+                // Make disappear previous text then reset previous demo indicator
+                bloodParticlesSystem.makeDisappearCellDescription()
+                bloodParticlesSystem.previousDemo = null
+    
+                // Actualize visual selection
+                gsap.to(this.$squareButton, 0.5, {background: 'rgba(255, 255, 255, 1)'})
+                for (const _button of this.$circleButtons)
+                {
+                    gsap.to(_button, 0.5, {background: 'rgba(255, 255, 255, 0)'})
+                }
             }
 
         })
@@ -789,30 +805,33 @@ let sceneInterface =
         {
             _button.addEventListener('click', () =>
             {
-                // Set actual demo indicator
-                bloodParticlesSystem.actualDemo = parseInt(_button.getAttribute('value'))
-
-                // Test if previous demo is different from actual and if we arent in animation
-                if (!bloodParticlesSystem.inAnimation && bloodParticlesSystem.previousDemo != bloodParticlesSystem.actualDemo)
+                // Test if and if we arent already in animation
+                if (!bloodParticlesSystem.inAnimation)
                 {
-                    // Actualize visual selection
-                    console.log('rgba(255, 255, 255, 0)')
-                    gsap.to(this.$squareButton, 0.5, {background: 'rgba(255, 255, 255, 0)'})
-                    gsap.to(_button, 0.5, {background: 'rgba(255, 255, 255, 1)'})
-                    
-                    // Declare that we are in the animation to prevent mulitple launch
-                    bloodParticlesSystem.inAnimation = true
-                    
-                    if (bloodParticlesSystem.previousDemo != null)
-                    {
-                        // Actualize visual selection of previous button
-                        gsap.to(this.$circleButtons[bloodParticlesSystem.previousDemo], 0.5, {background: 'rgba(255, 255, 255, 0)'})
-                        // Make disappear previous cell description
-                        bloodParticlesSystem.makeDisappearCellDescription()
-                    }
+                    // Set actual demo indicator
+                    bloodParticlesSystem.actualDemo = parseInt(_button.getAttribute('value'))
     
-                    // Launch demo
-                    bloodParticlesSystem.goToDemo()
+                    // Test if previous demo is different from actual
+                    if (bloodParticlesSystem.previousDemo != bloodParticlesSystem.actualDemo)
+                    {
+                        // Actualize visual selection
+                        gsap.to(this.$squareButton, 0.5, {background: 'rgba(255, 255, 255, 0)'})
+                        gsap.to(_button, 0.5, {background: 'rgba(255, 255, 255, 1)'})
+                        
+                        // Declare that we are in the animation to prevent mulitple launch
+                        bloodParticlesSystem.inAnimation = true
+                        
+                        if (bloodParticlesSystem.previousDemo != null)
+                        {
+                            // Actualize visual selection of previous button
+                            gsap.to(this.$circleButtons[bloodParticlesSystem.previousDemo], 0.5, {background: 'rgba(255, 255, 255, 0)'})
+                            // Make disappear previous cell description
+                            bloodParticlesSystem.makeDisappearCellDescription()
+                        }
+        
+                        // Launch demo
+                        bloodParticlesSystem.goToDemo()
+                    }
                 }
             })
         }
