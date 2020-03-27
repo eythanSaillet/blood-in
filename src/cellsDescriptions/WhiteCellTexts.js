@@ -29,7 +29,7 @@ export default class WhiteCellTexts{
         text.rotation.y = - Math.PI * 0.1
 
         const textGeometry2 = new THREE.TextGeometry(
-            `Il en existe de plein de types differents, certains \nmangent l'enemie, d'autres le scannent afin de permettre \nau corps de creer des anticorps.`,
+            `Il en existe de plein de types differents, certains \nmangent l'ennemi, d'autres le scannent afin de permettre \nau corps de creer des anticorps.`,
             {
                 font : new THREE.Font(font),
                 size: 0.05,
@@ -50,7 +50,7 @@ export default class WhiteCellTexts{
         line2.rotation.y = Math.PI * 0.05
 
         const textGeometry3 = new THREE.TextGeometry(
-            'Ceux sont les cellules immunitaires, leurs role est \nde defendre l\'organisme en cas d\'agression \npar un agent pathogene comme les virus, \nbacteries, parasites...',
+            'Ce sont les cellules immunitaires, leur role est \nde defendre l\'organisme en cas d\'agression \npar un agent pathogene comme les virus, \nbacteries, parasites...',
             {
                 font : new THREE.Font(font),
                 size: 0.05,

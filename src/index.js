@@ -72,12 +72,12 @@ scene.add(ambientLight)
 
 let models =
 {
-    // Defin models that we are going to laod
+    // Define models that we are going to load
     redCellGeometry: null,
     plateletGeometry: null,
     whiteCellGeometry: null,
     
-    // Defin total number of medels for the loading progress
+    // Define total number of models for the loading progress
     numberOfModels: 3,
 
     // Define the loader
@@ -271,18 +271,8 @@ let launcher =
                             startTimeline.to(menu.light.position, 1, {y: 1, z: 9, ease: Power3.easeInOut},'-=0.3')
                             startTimeline.to(menu.light, 1, {intensity: 1.2, ease: Power1.easeInOut},'-=1.5')
                             startTimeline.to(menu.light, 1, {distance: 30, ease: Power1.easeInOut, onComplete: () => sceneInterface.setup()},'-=1')
-    
-                            /**
-                             * LAUNCH SCENE HERE
-                             */
-    
-                            // Setup blood particles system
+
                             bloodParticlesSystem.setup()
-                            // document.querySelector('.launch').addEventListener('click', () => bloodParticlesSystem.setup())
-            
-                            /**
-                             * LAUNCH SCENE HERE
-                             */
                         })
                     }
                 })
@@ -664,11 +654,6 @@ let bloodParticlesSystem =
         gsap.from(texts.group.children[4].position, 1.5, {x: 7})
         gsap.from(texts.group.children[5].position, 1.5, { x: -7})
 
-        // setTimeout(() =>
-        // {
-        //     bloodParticlesSystem.inAnimation = true
-        // }, 3000)
-
         // Then add text group to the scene
         scene.add(texts.group)
     },
@@ -761,6 +746,7 @@ let sceneInterface =
     $squareButton: document.querySelector('.sceneInterface .squareButton'),
     $circleButtons: document.querySelectorAll('.sceneInterface .circleButton'),
 
+    // Make appear the scene interface
     setup()
     {
         this.$sceneInterface.style.display = 'flex'
@@ -773,6 +759,7 @@ let sceneInterface =
             }
         }, 500)
 
+        // Set events on interface buttons
         this.setButtonsEvent()
     },
 

@@ -50,7 +50,7 @@ export default class PlateletTexts{
         line2.rotation.y = Math.PI * 0.05
 
         const textGeometry3 = new THREE.TextGeometry(
-            'Elles sont responsable de la coagulation \ndu sang, ce qui evite les trop gros \necoulement de sang en cas de blessures.',
+            'Elles sont responsables de la coagulation \ndu sang, ce qui evite les trop gros \necoulement de sang en cas de blessures.',
             {
                 font : new THREE.Font(font),
                 size: 0.05,
